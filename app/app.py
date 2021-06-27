@@ -190,14 +190,19 @@ def login():
 def home():
     if(basic_page_verify(session["id"]) == True):
         form = HomeForm1()
-        #Forward user to analysis or new stats page depending on button pressed
-        if form.validate_on_submit():
-            if form.client_search.data:
-                return redirect(url_for('client_search'))
-            elif form.new_client.data:
-                return redirect(url_for('new_client'))
+        instances_query = """SELECT id, pfsense_name, hostname, reachable_ip FROM pfsense_instances"""
+        last_log_query = """SELECT record_time FROM pfsense_logs WHERE pfsense_instance = {} ORDER BY record_time DESC LIMIT 1"""
+        instances_raw = query_db(instances_query)
+        instances = []
+        headings = ["Pfsense Name", "Hostname", "Reachable IP", "Last Log Entry"]
+        for instance in instances_raw:
+            last_time = query_db(last_log_query.format(instance[0]))[0][0]
+            logging.warning(last_time)
+            name = ";" + str(instance[1])
+            instances = instances + [[name, str(instance[2]), str(instance[3]), last_time.strftime('%Y-%m-%d %H:%M:%S')]]
         #Render homepage based on index_form.html template
-        return render_template("index_form.html", heading="Homepage", form=form, messages="Welcome to the Anderselite PAYE Admin portal. Please pick from the options below:")
+        logging.warning(instances)
+        return render_template("vertical_table.html", heading="Homepage", headings=headings, collection=instances)
     else:
         return render_template("index.html", heading="Oops!", messages="It looks like you have ended up in the wrong place.")
 
