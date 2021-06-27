@@ -27,7 +27,10 @@
                 {% for data in row %}
                     {% if data.startswith(";") %}
                         {% set list1 = data.split(';') %}
-                        <th style="padding: 15px; border: 1px solid black">{{list1[0]}}</th>
+                        <th style="padding: 15px; border: 1px solid black">{{list1[1]}}</th>
+                    {% elif data.startswith("/") %}
+                        {% set list1 = data.split(';') %}
+                        <td style="padding: 15px; border: 1px solid black"><a href="{{list1[0]}}" class="btn btn-primary">{{list1[1]}}</a></td>
                     {% else %} 
                         <td style="padding: 15px; border: 1px solid black">{{data}}</td>
                     {% endif %}
