@@ -15,53 +15,25 @@
     </table>
 {% endmacro %}
 
-{% macro make_vertical_table_results(table_headings, row_collection) %}
+{% macro make_vertical_table_results(headings, collection) %}
     <table style="margin-left: auto; margin-right: auto; border: 1px solid black">
         <tr>
-        {% for table_heading in table_headings %}
-            <th style="padding: 15px; border: 1px solid black">{{table_heading}}</th>
+            {% for heading in headings %}
+                <th style="padding: 15px; border: 1px solid black">{{heading}}</th>
+            {% endfor %}
+        </tr>
+        {% for row in collection %}
+            <tr> 
+                {% for data in row %}
+                    {% if data.startswith(";") %}
+                        {% set list1 = data.split(';') %}
+                        <th style="padding: 15px; border: 1px solid black">{{list1[0]}}</th>
+                    {% else %} 
+                        <td style="padding: 15px; border: 1px solid black">{{data}}</td>
+                    {% endif %}
+                {% endfor %}
+            </tr>
         {% endfor %}
-        </tr>
-        <tr>
-            <th style="padding: 15px; border: 1px solid black">{{row_collection[0][0]}}</th>
-            <td style="padding: 15px; border: 1px solid black"><b><i>{{row_collection[0][1]}}</i></b></td>
-            <td style="padding: 15px; border: 1px solid black; color: red;">{{row_collection[0][2]}}</td>
-        </tr>
-        <tr>
-            <td style="padding: 15px; border: 1px solid black">{{row_collection[1][0]}}</td>
-            <td style="padding: 15px; border: 1px solid black">{{row_collection[1][1]}}</td>
-            <td style="padding: 15px; border: 1px solid black; color: red;">{{row_collection[1][2]}}</td>
-        </tr>
-        <tr>
-            <td style="padding: 15px; border: 1px solid black">{{row_collection[2][0]}}</td>
-            <td style="padding: 15px; border: 1px solid black">{{row_collection[2][1]}}</td>
-            <td style="padding: 15px; border: 1px solid black; color: red;">{{row_collection[2][2]}}</td>
-        </tr>
-        <tr>
-            <td style="padding: 15px; border: 1px solid black">{{row_collection[3][0]}}</td>
-            <td style="padding: 15px; border: 1px solid black">{{row_collection[3][1]}}</td>
-            <td style="padding: 15px; border: 1px solid black; color: red;">{{row_collection[3][2]}}</td>
-        </tr>
-        <tr>
-            <td style="padding: 15px; border: 1px solid black">{{row_collection[4][0]}}</td>
-            <td style="padding: 15px; border: 1px solid black">{{row_collection[4][1]}}</td>
-            <td style="padding: 15px; border: 1px solid black; color: red;">{{row_collection[4][2]}}</td>
-        </tr>
-        <tr>
-            <td style="padding: 15px; border: 1px solid black">{{row_collection[5][0]}}</td>
-            <td style="padding: 15px; border: 1px solid black">{{row_collection[5][1]}}</td>
-            <td style="padding: 15px; border: 1px solid black; color: red;">{{row_collection[5][2]}}</td>
-        </tr>
-        <tr>
-            <td style="padding: 15px; border: 1px solid black">{{row_collection[6][0]}}</td>
-            <td style="padding: 15px; border: 1px solid black">{{row_collection[6][1]}}</td>
-            <td style="padding: 15px; border: 1px solid black; color: red;">{{row_collection[6][2]}}</td>
-        </tr>
-        <tr>
-            <th style="padding: 15px; border: 1px solid black">{{row_collection[7][0]}}</th>
-            <td style="padding: 15px; border: 1px solid black"><b><i>{{row_collection[7][1]}}</i></b></td>
-            <td style="padding: 15px; border: 1px solid black; color: red;">{{row_collection[7][2]}}</td>
-        </tr>
     </table>
 {% endmacro %}
 
