@@ -190,7 +190,7 @@ def login():
 def home():
     if(basic_page_verify(session["id"]) == True):
         form = HomeForm1()
-        instances_query = """SELECT id, pfsense_name, hostname, reachable_ip FROM pfsense_instances"""
+        instances_query = """SELECT id, pfsense_name, hostname, reachable_ip FROM pfsense_instances ORDER BY pfsense_name DESC"""
         last_log_query = """SELECT record_time FROM pfsense_logs WHERE pfsense_instance = {} ORDER BY record_time DESC LIMIT 1"""
         instances_raw = query_db(instances_query)
         instances = []
@@ -199,7 +199,8 @@ def home():
             last_time = query_db(last_log_query.format(instance[0]))[0][0]
             logging.warning(last_time)
             name = ";" + str(instance[1])
-            instances = instances + [[name, str(instance[2]), str(instance[3]), last_time.strftime('%Y-%m-%d %H:%M:%S')]]
+            id = str(instance[0])
+            instances = instances + [[name, str(instance[2]), str(instance[3]), last_time.strftime('%Y-%m-%d %H:%M:%S'), "/instance_logs/" + id + ";Logs", "/instance_details/" + id + ";Details"]]
         #Render homepage based on index_form.html template
         logging.warning(instances)
         return render_template("vertical_table.html", heading="Homepage", headings=headings, collection=instances)
