@@ -1,0 +1,9 @@
+flask
+flask_bootstrap
+flask_wtf
+wtforms
+wtforms.validators
+mysql-connector-python
+datetime
+waitress
+cryptography
