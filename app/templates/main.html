@@ -1,8 +1,9 @@
-{% extends "main.html" %}
-{% import "bootstrap/wtf.html" as wtf %}
+{% extends "bootstrap/base.html" %}
+
 {% block title %}
-    {{ super() }}
+    PfSense Dashboard
 {% endblock %}
+
 {% block navbar %}
 <div class="navbar navbar-inverse" role="navigation" style="background-color: #242254; border-color: #242254;">
     <div class="container">
@@ -14,10 +15,12 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="/" style="color:#c8102e;"><b>PfSense Dashboard</b></a>
+            <a class="navbar-brand" href="/home" style="color:#c8102e;"><b>PfSense Dashboard</b></a>
         </div>
         <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
+                <li><a href="/client_search">Search Clients</a></li>
+                <li><a href="/new_client">Create new client</a></li>
             </ul>
         </div>
     </div>
@@ -25,10 +28,5 @@
 {% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="page-header">
-        <h1>{{ heading }}</h1>
-    </div>
-    {{ wtf.quick_form(form) }}
-</div>
+
 {% endblock %}
