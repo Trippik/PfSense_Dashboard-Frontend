@@ -15,7 +15,9 @@
         <h1>{{ heading }}</h1>
     </div>
     {{ macros.make_bold_list(messages) }}
-    <hr>
+    <br><hr><br>
+    {{ macros.make_link_buttons(buttons) }}
+    <br><hr><br>
     {{ wtf.quick_form(form) }}
     <br><hr><br>
 </div>
