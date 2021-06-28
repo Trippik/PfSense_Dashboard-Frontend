@@ -47,7 +47,6 @@ def query_db(query):
         port=db_port
     )
     cursor = db.cursor()
-    logging.warning(query)
     cursor.execute(query)
     result = cursor.fetchall()
     return(result)
@@ -100,7 +99,6 @@ def query_where (where_tuples):
     query_part = query_part[:-4]
     return(query_part)
 
-
 def message_build (statement, var):
     string = "{}: {} \n"
     string = string.format(statement, var)
@@ -115,7 +113,12 @@ def select_option_generate(table, value, mode):
     options_tup = options_tup + select_values(table, value)
     return(options_tup)
 
-#-----PRESET FORMS-----
+def user_auth_error_page():
+    return render_template("index.html", heading="Oops!", messages="It looks like you have ended up in the wrong place.")
+
+#----------------------------------------------------
+#PRESET FORMS
+#----------------------------------------------------
 #Form for login page
 class LoginForm(FlaskForm):
     username = StringField("Username", validators=[DataRequired()])
@@ -145,7 +148,11 @@ class ClientDetailsForm(FlaskForm):
 class NewClientForm(FlaskForm):
     client_name = StringField("Client Name", validators=[DataRequired()])
     submit = SubmitField("Create Client Record")
-#-----WEB APP PAGES-----
+
+
+#----------------------------------------------------
+#WEB APP PAGES
+#----------------------------------------------------
 #LOGIN PAGE
 @app.route('/', methods=["GET","POST"])
 def login():
@@ -205,7 +212,7 @@ def home():
         logging.warning(instances)
         return render_template("vertical_table.html", heading="Homepage", headings=headings, collection=instances)
     else:
-        return render_template("index.html", heading="Oops!", messages="It looks like you have ended up in the wrong place.")
+        user_auth_error_page()
 
 #INSTANCE LOGS PAGE
 @app.route("/instance_logs/<id>", methods=["GET", "POST"])
@@ -247,7 +254,7 @@ LIMIT {}"""
         headings = ["Time", "Rule Number", "Interface", "Reason", "Act", "Direction", "IP Version", "Protocol", "Source IP", "Source Port", "Destination IP", "Destination Port", "ML Check"]
         return render_template("table_button.html", heading="Log Results", table_headings=headings, data_collection=final_results)
     else:
-        return render_template("index.html", heading="Oops!", messages="It looks like you have ended up in the wrong place.")
+        user_auth_error_page()
 
 #INSTANCE LOGS PAGE
 @app.route("/instance_details/<id>", methods=["GET", "POST"])
@@ -255,5 +262,9 @@ def instance_details(id):
     if(basic_page_verify(session["id"]) == True):
         pass
     else:
-      return render_template("index.html", heading="Oops!", messages="It looks like you have ended up in the wrong place.")  
+      user_auth_error_page()
+    
+#----------------------------------------------------
+#SERVE SITE
+#----------------------------------------------------
 serve(app, host="0.0.0.0", port=8080, threads=1)
