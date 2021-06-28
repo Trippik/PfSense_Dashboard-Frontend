@@ -213,12 +213,10 @@ def home():
         headings = ["Pfsense Name", "Hostname", "Reachable IP", "Last Log Entry"]
         for instance in instances_raw:
             last_time = query_db(last_log_query.format(instance[0]))[0][0]
-            logging.warning(last_time)
             name = ";" + str(instance[1])
             id = str(instance[0])
             instances = instances + [[name, str(instance[2]), str(instance[3]), last_time.strftime('%Y-%m-%d %H:%M:%S'), "/instance_logs/" + id + ";Logs", "/instance_details/" + id + ";Details"]]
         #Render homepage based on index_form.html template
-        logging.warning(instances)
         return render_template("vertical_table.html", heading="Homepage", headings=headings, collection=instances)
     else:
         user_auth_error_page()
@@ -284,6 +282,7 @@ WHERE id = {}"""
         final_tup = []
         max_count = len(pre_amble_tup)
         element_count = 0
+        buttons_tup = [["/instance_rules/" + str(id), "Firewall Rules"], ["/instance_logs/" + str(id), "Instance Logs"]]
         while(element_count < max_count):
             result_element = str(instance_results[element_count])
             item = [[pre_amble_tup[element_count], result_element]]
@@ -307,9 +306,33 @@ WHERE id = {}"""
             update_query = """UPDATE pfsense_instances SET {} WHERE id = {}"""
             update_db(update_query.format(clause, str(id)))
             return (redirect('/instance_details/' + str(id)))
-        return render_template("index_multiline_bold.html", heading="Instance Details", messages=final_tup, form=form)
+        return render_template("index_multiline_bold.html", heading="Instance Details", messages=final_tup, buttons=buttons_tup, form=form)
     else:
       user_auth_error_page()
+
+#INSTANCE FIREWALL RULES PAGE
+@app.route("/instance_rules/<id>", methods=["GET", "POST"])
+def instance_rules(id):
+    if(basic_page_verify(session["id"]) == True):
+        query = """SELECT
+rule_number,
+rule_description
+FROM pfsense_firewall_rules
+WHERE pfsense_instance = {}
+ORDER BY rule_number ASC"""
+        results = query_db(query.format(str(id)))
+        final_results = []
+        for row in results:
+            new_row = []
+            for item in row:
+                item = str(item)
+                new_row = new_row + [item]
+            final_results = final_results + [new_row]
+        headings = ["Rule Number", "Rule Description"]
+        return render_template("table_button.html", heading="Log Results", table_headings=headings, data_collection=final_results)
+    else:
+        user_auth_error_page()
+
     
 #----------------------------------------------------
 #SERVE SITE
