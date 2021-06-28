@@ -256,11 +256,31 @@ LIMIT {}"""
     else:
         user_auth_error_page()
 
-#INSTANCE LOGS PAGE
+#INSTANCE DETAILS PAGE
 @app.route("/instance_details/<id>", methods=["GET", "POST"])
 def instance_details(id):
     if(basic_page_verify(session["id"]) == True):
-        pass
+        instance_details_query = """SELECT 
+pfsense_name,
+hostname,
+reachable_ip,
+instance_user,
+instance_password,
+ssh_port
+FROM pfsense_instances
+WHERE id = {}"""
+        instance_results = query_db(instance_details_query.format(str(id)))[0]
+        pre_amble_tup = ["Name", "Hostname", "Reachable IP", "Instance User", "Instance Password", "SSH Port"]
+        final_tup = []
+        max_count = len(pre_amble_tup)
+        element_count = 0
+        while(element_count < max_count):
+            result_element = str(instance_results[element_count])
+            item = [[pre_amble_tup[element_count], result_element]]
+            final_tup = final_tup + item
+            element_count = element_count + 1
+        logging.warning(final_tup)
+        return render_template("index_multiline_bold.html", heading="Instance Details", messages=final_tup)
     else:
       user_auth_error_page()
     
