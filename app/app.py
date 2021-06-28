@@ -207,5 +207,48 @@ def home():
     else:
         return render_template("index.html", heading="Oops!", messages="It looks like you have ended up in the wrong place.")
 
+#INSTANCE LOGS PAGE
+@app.route("/instance_logs/<id>", methods=["GET", "POST"])
+def instance_logs(id):
+    if(basic_page_verify(session["id"]) == True):
+        query = """SELECT 
+type_code,
+record_time,
+pfsense_log_type.log_type,
+rule_number,
+pfsense_real_interface.interface,
+pfsense_reason.reason,
+pfsense_act.act,
+pfsense_direction.direction,
+ip_version,
+pfsense_protocol.protocol,
+pfsense_source_ip.ip,
+source_port,
+pfsense_destination_ip.ip,
+destination_port
+FROM pfsense_logs
+LEFT JOIN pfsense_log_type ON pfsense_logs.log_type = pfsense_log_type.id
+LEFT JOIN pfsense_real_interface ON pfsense_logs.real_interface = pfsense_real_interface.id
+LEFT JOIN pfsense_reason ON pfsense_logs.reason = pfsense_reason.id
+LEFT JOIN pfsense_act ON pfsense_logs.act = pfsense_act.id
+LEFT JOIN pfsense_direction ON pfsense_logs.direction = pfsense_direction.id
+LEFT JOIN pfsense_protocol ON pfsense_logs.protocol = pfsense_protocol.id
+LEFT JOIN pfsense_ip AS pfsense_source_ip ON pfsense_logs.source_ip = pfsense_source_ip.id
+LEFT JOIN pfsense_ip AS pfsense_destination_ip ON pfsense_logs.destination_ip = pfsense_destination_ip.id
+WHERE pfsense_logs.pfsense_instance = {}
+ORDER BY pfsense_logs.record_time DESC
+LIMIT {}"""
+        results = query_db(query.format(id, "50"))
+        final_results = []
+        for row in results:
+            new_row = []
+            for item in row:
+                item = str(item)
+                new_row = new_row + [item]
+            final_results = final_results + [new_row]
+        headings = ["Type Code", "Time", "Log Type", "Rule Number", "Interface", "Reason", "Act", "Direction", "IP Version", "Protocol", "Source IP", "Source Port", "Destination IP", "Destination Port"]
+        return render_template("table_button.html", heading="Log Results", table_headings=headings, data_collection=final_results)
+    else:
+        return render_template("index.html", heading="Oops!", messages="It looks like you have ended up in the wrong place.")
 
 serve(app, host="0.0.0.0", port=8080, threads=1)
