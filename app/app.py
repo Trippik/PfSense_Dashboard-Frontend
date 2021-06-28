@@ -159,6 +159,17 @@ class InstanceDetailsForm(FlaskForm):
     ssh_port = IntegerField("SSH Port", validators=[Optional()])
     submit = SubmitField("Alter Record", validators=[Optional()])
 
+#Form for Adding new Instance
+class NewInstanceForm(FlaskForm):
+    instance_name = StringField("Name", validators=[DataRequired()])
+    hostname = StringField("Hostname", validators=[DataRequired()])
+    reachable_ip = StringField("Reachable IP", validators=[DataRequired()])
+    instance_user = StringField("Instance User", validators=[DataRequired()])
+    instance_password = StringField("Instance Password", validators=[DataRequired()])
+    ssh_port = IntegerField("SSH Port", validators=[DataRequired()])
+    submit = SubmitField("Add Instance to System", validators=[Optional()])
+
+
 #----------------------------------------------------
 #WEB APP PAGES
 #----------------------------------------------------
@@ -212,10 +223,14 @@ def home():
         instances = []
         headings = ["Pfsense Name", "Hostname", "Reachable IP", "Last Log Entry"]
         for instance in instances_raw:
-            last_time = query_db(last_log_query.format(instance[0]))[0][0]
+            try:
+                last_time = query_db(last_log_query.format(instance[0]))[0][0]
+                last_time = last_time.strftime('%Y-%m-%d %H:%M:%S')
+            except:
+                last_time = "No logs"
             name = ";" + str(instance[1])
             id = str(instance[0])
-            instances = instances + [[name, str(instance[2]), str(instance[3]), last_time.strftime('%Y-%m-%d %H:%M:%S'), "/instance_logs/" + id + ";Logs", "/instance_details/" + id + ";Details"]]
+            instances = instances + [[name, str(instance[2]), str(instance[3]), last_time, "/instance_logs/" + id + ";Logs", "/instance_details/" + id + ";Details"]]
         #Render homepage based on index_form.html template
         return render_template("vertical_table.html", heading="Homepage", headings=headings, collection=instances)
     else:
@@ -330,6 +345,29 @@ ORDER BY rule_number ASC"""
             final_results = final_results + [new_row]
         headings = ["Rule Number", "Rule Description"]
         return render_template("table_button.html", heading="Log Results", table_headings=headings, data_collection=final_results)
+    else:
+        user_auth_error_page()
+
+#ADD NEW INSTANCE TO SYSTEM
+@app.route("/add_instance", methods=["GET", "POST"])
+def add_instance():
+    if(basic_page_verify(session["id"]) == True):
+        form = NewInstanceForm()
+        if form.validate_on_submit():
+            insert_query = """INSERT INTO `Dashboard_DB`.`pfsense_instances` (`pfsense_name`, `hostname`, `reachable_ip`, `instance_user`, `instance_password`, `ssh_port`) VALUES ("{}", "{}", "{}", "{}", "{}", {});"""
+            update_db(insert_query.format(form.instance_name.data, form.hostname.data, form.reachable_ip.data, form.instance_user.data, form.instance_password.data, str(form.ssh_port.data)))
+            select_query = """SELECT id FROM pfsense_instances WHERE
+pfsense_name = "{}" 
+AND hostname = "{}" 
+AND reachable_ip = "{}" 
+AND instance_user = "{}" 
+AND instance_password = "{}" 
+AND ssh_port = {}"""
+            id = query_db(select_query.format(form.instance_name.data, form.hostname.data, form.reachable_ip.data, form.instance_user.data, form.instance_password.data, str(form.ssh_port.data)))[0][0]
+            logging.warning(str(id))
+            logging.warning('/instance_details/' + str(id))
+            return (redirect('/instance_details/' + str(id)))
+        return render_template("index_form.html", heading="Add New Instance", form=form)
     else:
         user_auth_error_page()
 
