@@ -89,3 +89,9 @@
         <p>{{para}}</p>
     {% endfor %}
 {% endmacro %}
+
+{% macro make_bold_list(items) %}
+    {% for item in items %}
+        <p><b>{{item[0]}}</b> : {{item[1]}}</p>
+    {% endfor %}
+{% endmacro %}
