@@ -149,6 +149,15 @@ class NewClientForm(FlaskForm):
     client_name = StringField("Client Name", validators=[DataRequired()])
     submit = SubmitField("Create Client Record")
 
+#Form for Instance Details Fields
+class InstanceDetailsForm(FlaskForm):
+    instance_name = StringField("Name", validators=[Optional()])
+    hostname = StringField("Hostname", validators=[Optional()])
+    reachable_ip = StringField("Reachable IP", validators=[Optional()])
+    instance_user = StringField("Instance User", validators=[Optional()])
+    instance_password = StringField("Instance Password", validators=[Optional()])
+    ssh_port = IntegerField("SSH Port", validators=[Optional()])
+    submit = SubmitField("Alter Record", validators=[Optional()])
 
 #----------------------------------------------------
 #WEB APP PAGES
@@ -260,6 +269,7 @@ LIMIT {}"""
 @app.route("/instance_details/<id>", methods=["GET", "POST"])
 def instance_details(id):
     if(basic_page_verify(session["id"]) == True):
+        form = InstanceDetailsForm()
         instance_details_query = """SELECT 
 pfsense_name,
 hostname,
@@ -279,8 +289,25 @@ WHERE id = {}"""
             item = [[pre_amble_tup[element_count], result_element]]
             final_tup = final_tup + item
             element_count = element_count + 1
-        logging.warning(final_tup)
-        return render_template("index_multiline_bold.html", heading="Instance Details", messages=final_tup)
+        if form.validate_on_submit():
+            fields_tup = [["pfsense_name", form.instance_name.data, 1], ["hostname", form.hostname.data, 1], ["reachable_ip", form.reachable_ip.data, 1], ["instance_user", form.instance_user.data, 1], ["instance_password", form.instance_password.data, 1], ["ssh_port", form.ssh_port.data, 1]]
+            clause = ""
+            for item in fields_tup:
+                if(item[1] == ""):
+                    pass
+                elif(item[1] == None):
+                    pass
+                else:
+                    if(item[2] == 1):
+                        element = '"' + item[1] + '"'
+                    elif(item[2] == 2):
+                        element = item[1]
+                    clause = clause + item[0] + " = " + element + ", "
+            clause = clause[:-2]
+            update_query = """UPDATE pfsense_instances SET {} WHERE id = {}"""
+            update_db(update_query.format(clause, str(id)))
+            return (redirect('/instance_details/' + str(id)))
+        return render_template("index_multiline_bold.html", heading="Instance Details", messages=final_tup, form=form)
     else:
       user_auth_error_page()
     
