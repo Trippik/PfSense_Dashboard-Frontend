@@ -95,3 +95,9 @@
         <p><b>{{item[0]}}</b> : {{item[1]}}</p>
     {% endfor %}
 {% endmacro %}
+
+{% macro make_link_buttons(buttons) %}
+    {% for button in buttons %}
+        <a href="{{button[0]}}" class="btn btn-primary">{{button[1]}}</a>
+    {% endfor %}
+{% endmacro %}
