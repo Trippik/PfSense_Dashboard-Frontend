@@ -244,6 +244,56 @@ def home():
     else:
         user_auth_error_page()
 
+#ALL INSTANCE OPENVPN PAGE
+@app.route("/all_openvpn", methods=["GET", "POST"])
+def all_openvpn():
+    if(basic_page_verify(session["id"]) == True):
+        query = """SELECT record_time, vpn_user.user_name, vpn_user.id, pfsense_instances.pfsense_name, pfsense_instances.id FROM open_vpn_access_log
+LEFT JOIN vpn_user ON open_vpn_access_log.vpn_user = vpn_user.id
+LEFT JOIN pfsense_instances ON open_vpn_access_log.pfsense_instance = pfsense_instances.id
+ORDER BY record_time DESC 
+LIMIT 50"""
+        results = query_db(query)
+        filtered_results = []
+        for row in results:
+            new_row = []
+            for item in row:
+                item = str(item)
+                new_row = new_row + [item]
+            filtered_results = filtered_results + [new_row]
+        final_results = []
+        for row in filtered_results:
+            final_results = final_results + [[row[0], row[1], row[3], "/vpn_user/" + row[2] + ";User Details", "/instance_details/" + row[4] + ";Instance Details"]]
+        headings = ["Login Time", "User", "PfSense Instance"]
+        return render_template("vertical_table.html", heading="OpenVPN Logins", headings=headings, collection=final_results)
+    else:
+        user_auth_error_page()
+
+#PER INSTANCE OPENVPN PAGE
+@app.route("/instance_openvpn/<id>", methods=["GET", "POST"])
+def instance_openvpn(id):
+    if(basic_page_verify(session["id"]) == True):
+        query = """SELECT record_time, vpn_user.user_name, vpn_user.id FROM open_vpn_access_log
+LEFT JOIN vpn_user ON open_vpn_access_log.vpn_user = vpn_user.id
+WHERE open_vpn_access_log.pfsense_instance = {}
+ORDER BY record_time DESC 
+LIMIT 50"""
+        results = query_db(query.format(id))
+        filtered_results = []
+        for row in results:
+            new_row = []
+            for item in row:
+                item = str(item)
+                new_row = new_row + [item]
+            filtered_results = filtered_results + [new_row]
+        final_results = []
+        for row in filtered_results:
+            final_results = final_results + [[row[0], row[1], "/vpn_user/" + row[2] + ";User Details"]]
+        headings = ["Login Time", "User", "PfSense Instance"]
+        return render_template("vertical_table.html", heading="OpenVPN Logins", headings=headings, collection=final_results)
+    else:
+        user_auth_error_page()
+
 #INSTANCE LOGS PAGE
 @app.route("/instance_logs/<id>", methods=["GET", "POST"])
 def instance_logs(id):
@@ -305,7 +355,7 @@ WHERE id = {}"""
         final_tup = []
         max_count = len(pre_amble_tup)
         element_count = 0
-        buttons_tup = [["/instance_rules/" + str(id), "Firewall Rules"], ["/instance_logs/" + str(id), "Instance Logs"]]
+        buttons_tup = [["/instance_rules/" + str(id), "Firewall Rules"], ["/instance_logs/" + str(id), "Instance Logs"], ["/instance_openvpn/" + str(id), "Instance OpenVPN Log"]]
         while(element_count < max_count):
             result_element = str(instance_results[element_count])
             item = [[pre_amble_tup[element_count], result_element]]
