@@ -359,7 +359,7 @@ WHERE pfsense_instances.id = {}"""
         final_tup = []
         max_count = len(pre_amble_tup)
         element_count = 0
-        buttons_tup = [["/instance_rules/" + str(id), "Firewall Rules"], ["/instance_logs/" + str(id), "Instance Logs"], ["/instance_openvpn/" + str(id), "Instance OpenVPN Log"]]
+        buttons_tup = [["/instance_rules/" + str(id), "Firewall Rules"], ["/instance_logs/" + str(id), "Instance Logs"], ["/instance_openvpn/" + str(id), "Instance OpenVPN Log"], ["/instance_users/" + str(id), "Instance Users"]]
         while(element_count < max_count):
             result_element = str(instance_results[element_count])
             item = [[pre_amble_tup[element_count], result_element]]
@@ -407,6 +407,29 @@ ORDER BY rule_number ASC"""
             final_results = final_results + [new_row]
         headings = ["Rule Number", "Rule Description"]
         return render_template("table_button.html", heading="Log Results", table_headings=headings, data_collection=final_results)
+    else:
+        user_auth_error_page()
+
+#INSTANCE USERS PAGE
+@app.route("/instance_users/<id>", methods=["GET", "POST"])
+def instance_users(id):
+    if(basic_page_verify(session["id"]) == True):
+        query = """SELECT 
+user_name,
+user_description
+FROM pfsense_instance_users
+WHERE pfsense_instance = {} AND user_group = 'wheel' OR user_group = 'nobody'
+"""
+        results = query_db(query.format(str(id)))
+        final_results = []
+        for row in results:
+            new_row = []
+            for item in row:
+                item = str(item)
+                new_row = new_row + [item]
+            final_results = final_results + [new_row]
+        headings = ["User Name", "Description"]
+        return render_template("table_button.html", heading="PfSense Instance Users", table_headings=headings, data_collection=final_results)
     else:
         user_auth_error_page()
 
