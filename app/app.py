@@ -414,24 +414,6 @@ ORDER BY rule_number ASC"""
 @app.route("/instance_users/<id>", methods=["GET", "POST"])
 def instance_users(id):
     if(basic_page_verify(session["id"]) == True):
-        query = """SELECT 
-user_name,
-user_description
-FROM pfsense_instance_users
-WHERE pfsense_instance = {} AND user_group = 'wheel' OR user_group = 'nobody'
-"""
-        results = query_db(query.format(str(id)))
-        final_results = []
-        for row in results:
-            new_row = []
-            for item in row:
-                item = str(item)
-                new_row = new_row + [item]
-            final_results = final_results + [new_row]
-        headings = ["User Name", "Description"]
-        return render_template("table_button.html", heading="PfSense Instance Users", table_headings=headings, data_collection=final_results)
-    else:
-        user_auth_error_page()
 
 #ADD NEW INSTANCE TO SYSTEM
 @app.route("/add_instance", methods=["GET", "POST"])
