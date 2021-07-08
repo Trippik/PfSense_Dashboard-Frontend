@@ -347,11 +347,15 @@ hostname,
 reachable_ip,
 instance_user,
 instance_password,
-ssh_port
+ssh_port,
+freebsd_version.freebsd_version,
+pfsense_release.pfsense_release
 FROM pfsense_instances
-WHERE id = {}"""
+LEFT JOIN freebsd_version ON pfsense_instances.freebsd_version = freebsd_version.id
+LEFT JOIN pfsense_release ON pfsense_instances.pfsense_release = pfsense_release.id
+WHERE pfsense_instances.id = {}"""
         instance_results = query_db(instance_details_query.format(str(id)))[0]
-        pre_amble_tup = ["Name", "Hostname", "Reachable IP", "Instance User", "Instance Password", "SSH Port"]
+        pre_amble_tup = ["Name", "Hostname", "Reachable IP", "Instance User", "Instance Password", "SSH Port", "FreeBSD Version", "PfSense Release"]
         final_tup = []
         max_count = len(pre_amble_tup)
         element_count = 0
