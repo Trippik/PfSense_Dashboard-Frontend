@@ -116,6 +116,12 @@ def select_option_generate(table, value, mode):
 def user_auth_error_page():
     return render_template("index.html", heading="Oops!", messages="It looks like you have ended up in the wrong place.")
 
+def percent_process(rate, total):
+    dec = rate / total
+    percent = int(dec * 100)
+    percent = str(percent) + "%"
+    return(percent)
+
 #----------------------------------------------------
 #PRESET FORMS
 #----------------------------------------------------
@@ -169,6 +175,10 @@ class NewInstanceForm(FlaskForm):
     ssh_port = IntegerField("SSH Port", validators=[DataRequired()])
     submit = SubmitField("Add Instance to System", validators=[Optional()])
 
+#Form for previous and next pages
+class PreviousNext(FlaskForm):
+    previous_page = SubmitField("Previous Page", validators=[Optional()])
+    next_page = SubmitField("Next Page", validators=[Optional()])
 
 #----------------------------------------------------
 #WEB APP PAGES
@@ -233,15 +243,18 @@ def home():
                 now = datetime.now()
                 today = now.strftime('%Y-%m-%d')
                 log_count = int(query_db(count_days_logs.format(instance[0], last_time, today))[0][0])
-                daily_error_percent = str(((round(int(query_db(count_days_errors.format(instance[0], last_time, today, "-1"))[0][0])) / log_count) * 100)) + "%"
-                weekly_error_count = str(((round(int(query_db(count_week_errors.format(instance[0], last_time, today, "-1"))[0][0])) / log_count) * 100)) + "%"
-                joint_error_count = str(((round(int(query_db(count_both_errors.format(instance[0], last_time, today, "-1", "-1"))[0][0])) / log_count) * 100)) + "%"
+                daily_error_rate = int(query_db(count_days_errors.format(instance[0], last_time, today, "-1"))[0][0])
+                weekly_error_rate = int(query_db(count_week_errors.format(instance[0], last_time, today, "-1"))[0][0])
+                joint_error_rate = int(query_db(count_both_errors.format(instance[0], last_time, today, "-1", "-1"))[0][0])
+                daily_error_percent = percent_process(daily_error_rate, log_count)
+                weekly_error_percent = percent_process(weekly_error_rate, log_count)
+                joint_error_percent = percent_process(joint_error_rate, log_count)
             except:
                 last_time = "No logs"
                 percent_error = "NA"
             name = ";" + str(instance[1])
             id = str(instance[0])
-            instances = instances + [[name, str(instance[2]), str(instance[3]), last_time, daily_error_percent, weekly_error_count, joint_error_count, "/instance_logs/" + id + ";Logs", "/instance_details/" + id + ";Details"]]
+            instances = instances + [[name, str(instance[2]), str(instance[3]), last_time, daily_error_percent, weekly_error_percent, joint_error_percent, "/instance_logs/" + id + "-0;Logs", "/instance_details/" + id + ";Details"]]
         #Render homepage based on index_form.html template
         return render_template("vertical_table.html", heading="Homepage", headings=headings, collection=instances)
     else:
@@ -298,9 +311,25 @@ LIMIT 50"""
         user_auth_error_page()
 
 #INSTANCE LOGS PAGE
-@app.route("/instance_logs/<id>", methods=["GET", "POST"])
-def instance_logs(id):
+@app.route("/instance_logs/<id>-<offset>", methods=["GET", "POST"])
+def instance_logs(id, offset):
     if(basic_page_verify(session["id"]) == True):
+        form = PreviousNext()
+        if form.validate_on_submit():
+            if form.previous_page.data:
+                new_offset = int(offset) - 50
+                if(new_offset > 0):
+                    new_offset = str(new_offset)
+                    return redirect("/instance_logs/" + str(id) + "-" + str(new_offset))
+                else:
+                    pass
+            elif form.next_page.data:
+                new_offset = int(offset) + 50
+                if(new_offset > 0):
+                    new_offset = str(new_offset)
+                    return redirect("/instance_logs/" + str(id) + "-" + str(new_offset))
+                else:
+                    pass
         query = """SELECT 
 record_time,
 rule_number,
@@ -325,8 +354,8 @@ LEFT JOIN pfsense_ip AS pfsense_source_ip ON pfsense_logs.source_ip = pfsense_so
 LEFT JOIN pfsense_ip AS pfsense_destination_ip ON pfsense_logs.destination_ip = pfsense_destination_ip.id
 WHERE pfsense_logs.pfsense_instance = {}
 ORDER BY pfsense_logs.record_time DESC
-LIMIT {}"""
-        results = query_db(query.format(id, "50"))
+LIMIT {}, {}"""
+        results = query_db(query.format(id, offset, "50"))
         final_results = []
         for row in results:
             new_row = []
@@ -335,7 +364,7 @@ LIMIT {}"""
                 new_row = new_row + [item]
             final_results = final_results + [new_row]
         headings = ["Time", "Rule Number", "Interface", "Reason", "Act", "Direction", "IP Version", "Protocol", "Source IP", "Source Port", "Destination IP", "Destination Port", "ML Check"]
-        return render_template("table_button.html", heading="Log Results", table_headings=headings, data_collection=final_results)
+        return render_template("table_button-next_back.html", heading="Log Results", table_headings=headings, data_collection=final_results, form=form)
     else:
         user_auth_error_page()
 
