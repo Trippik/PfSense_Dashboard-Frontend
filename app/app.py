@@ -220,10 +220,12 @@ def home():
         instances_query = """SELECT id, pfsense_name, hostname, reachable_ip FROM pfsense_instances ORDER BY pfsense_name DESC"""
         last_log_query = """SELECT record_time FROM pfsense_logs WHERE pfsense_instance = {} ORDER BY record_time DESC LIMIT 1"""
         count_days_logs = """SELECT COUNT(*) FROM pfsense_logs WHERE pfsense_instance = {} AND record_time < '{}' AND record_time > '{}'"""
-        count_days_errors = """SELECT COUNT(*) FROM pfsense_logs WHERE pfsense_instance = {} AND record_time < '{}' AND record_time > '{}' AND previous_day_ml_check {}"""
+        count_days_errors = """SELECT COUNT(*) FROM pfsense_logs WHERE pfsense_instance = {} AND record_time < '{}' AND record_time > '{}' AND previous_day_ml_check = {}"""
+        count_week_errors = """SELECT COUNT(*) FROM pfsense_logs WHERE pfsense_instance = {} AND record_time < '{}' AND record_time > '{}' AND previous_week_ml_check = {}"""
+        count_both_errors = """SELECT COUNT(*) FROM pfsense_logs WHERE pfsense_instance = {} AND record_time < '{}' AND record_time > '{}' AND previous_day_ml_check = {} AND previous_week_ml_check = {}"""
         instances_raw = query_db(instances_query)
         instances = []
-        headings = ["Pfsense Name", "Hostname", "Reachable IP", "Last Log Entry", "Days Errors"]
+        headings = ["Pfsense Name", "Hostname", "Reachable IP", "Last Log Entry", "Days Errors", "Weeks Errors", "Joint Errors"]
         for instance in instances_raw:
             try:
                 last_time = query_db(last_log_query.format(instance[0]))[0][0]
@@ -231,14 +233,15 @@ def home():
                 now = datetime.now()
                 today = now.strftime('%Y-%m-%d')
                 log_count = int(query_db(count_days_logs.format(instance[0], last_time, today))[0][0])
-                error_count = int(query_db(count_days_errors.format(instance[0], last_time, today, "-1"))[0][0])
-                percent_error = str(int((error_count / log_count) * 100)) + "%"
+                daily_error_percent = str(((round(int(query_db(count_days_errors.format(instance[0], last_time, today, "-1"))[0][0])) / log_count) * 100)) + "%"
+                weekly_error_count = str(((round(int(query_db(count_week_errors.format(instance[0], last_time, today, "-1"))[0][0])) / log_count) * 100)) + "%"
+                joint_error_count = str(((round(int(query_db(count_both_errors.format(instance[0], last_time, today, "-1", "-1"))[0][0])) / log_count) * 100)) + "%"
             except:
                 last_time = "No logs"
                 percent_error = "NA"
             name = ";" + str(instance[1])
             id = str(instance[0])
-            instances = instances + [[name, str(instance[2]), str(instance[3]), last_time, percent_error, "/instance_logs/" + id + ";Logs", "/instance_details/" + id + ";Details"]]
+            instances = instances + [[name, str(instance[2]), str(instance[3]), last_time, daily_error_percent, weekly_error_count, joint_error_count, "/instance_logs/" + id + ";Logs", "/instance_details/" + id + ";Details"]]
         #Render homepage based on index_form.html template
         return render_template("vertical_table.html", heading="Homepage", headings=headings, collection=instances)
     else:
@@ -410,10 +413,6 @@ ORDER BY rule_number ASC"""
     else:
         user_auth_error_page()
 
-#INSTANCE USERS PAGE
-@app.route("/instance_users/<id>", methods=["GET", "POST"])
-def instance_users(id):
-    if(basic_page_verify(session["id"]) == True):
 
 #ADD NEW INSTANCE TO SYSTEM
 @app.route("/add_instance", methods=["GET", "POST"])
