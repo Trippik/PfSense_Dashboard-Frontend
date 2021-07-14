@@ -251,7 +251,9 @@ def home():
                 joint_error_percent = percent_process(joint_error_rate, log_count)
             except:
                 last_time = "No logs"
-                percent_error = "NA"
+                daily_error_percent = "NA"
+                weekly_error_percent = "NA"
+                joint_error_percent = "NA"
             name = ";" + str(instance[1])
             id = str(instance[0])
             instances = instances + [[name, str(instance[2]), str(instance[3]), last_time, daily_error_percent, weekly_error_percent, joint_error_percent, "/instance_logs/" + id + "-0;Logs", "/instance_details/" + id + ";Details"]]
