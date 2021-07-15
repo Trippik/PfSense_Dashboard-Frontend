@@ -278,10 +278,13 @@ def map():
     if(basic_page_verify(session["id"]) == True):
         start_coords = (51.75, -1.25)
         folium_map = folium.Map(location=start_coords, zoom_start=6)
-        folium.Marker(
-            [50.8957, -1.3942],
-            popup = "Anders Southampton "
-        ).add_to(folium_map)
+        instance_details_query = """SELECT id, pfsense_name, latitude, longtitude FROM pfsense_instances"""
+        results = query_db(instance_details_query)
+        for instance in results:
+            folium.Marker(
+                [float(instance[2]), float(instance[3])],
+                popup = instance[1]
+            ).add_to(folium_map)
         return folium_map._repr_html_()
     else:
         user_auth_error_page()
@@ -490,8 +493,6 @@ AND instance_user = "{}"
 AND instance_password = "{}" 
 AND ssh_port = {}"""
             id = query_db(select_query.format(form.instance_name.data, form.hostname.data, form.reachable_ip.data, form.instance_user.data, form.instance_password.data, str(form.ssh_port.data)))[0][0]
-            logging.warning(str(id))
-            logging.warning('/instance_details/' + str(id))
             return (redirect('/instance_details/' + str(id)))
         return render_template("index_form.html", heading="Add New Instance", form=form)
     else:
