@@ -18,6 +18,8 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from datetime import datetime
+import folium
+import geopy
 
 #Establish flask app
 app = Flask(__name__)
@@ -122,6 +124,13 @@ def percent_process(rate, total):
     percent = str(percent) + "%"
     return(percent)
 
+def long_lat_calc(address):
+    geocoder = geopy.Nominatim(user_agent = os.environ["NOMINATIM_USER"])
+    address_data = geocoder.geocode(address)
+    lat = address_data.latitude
+    long = address_data.longitude
+    return(long, lat)
+
 #----------------------------------------------------
 #PRESET FORMS
 #----------------------------------------------------
@@ -163,6 +172,7 @@ class InstanceDetailsForm(FlaskForm):
     instance_user = StringField("Instance User", validators=[Optional()])
     instance_password = StringField("Instance Password", validators=[Optional()])
     ssh_port = IntegerField("SSH Port", validators=[Optional()])
+    address = StringField("Address", validators=[Optional()])
     submit = SubmitField("Alter Record", validators=[Optional()])
 
 #Form for Adding new Instance
@@ -259,6 +269,20 @@ def home():
             instances = instances + [[name, str(instance[2]), str(instance[3]), last_time, daily_error_percent, weekly_error_percent, joint_error_percent, "/instance_logs/" + id + "-0;Logs", "/instance_details/" + id + ";Details"]]
         #Render homepage based on index_form.html template
         return render_template("vertical_table.html", heading="Homepage", headings=headings, collection=instances)
+    else:
+        user_auth_error_page()
+
+#MAP
+@app.route('/map', methods=["GET","POST"])
+def map():
+    if(basic_page_verify(session["id"]) == True):
+        start_coords = (51.75, -1.25)
+        folium_map = folium.Map(location=start_coords, zoom_start=6)
+        folium.Marker(
+            [50.8957, -1.3942],
+            popup = "Anders Southampton "
+        ).add_to(folium_map)
+        return folium_map._repr_html_()
     else:
         user_auth_error_page()
 
@@ -400,7 +424,7 @@ WHERE pfsense_instances.id = {}"""
             final_tup = final_tup + item
             element_count = element_count + 1
         if form.validate_on_submit():
-            fields_tup = [["pfsense_name", form.instance_name.data, 1], ["hostname", form.hostname.data, 1], ["reachable_ip", form.reachable_ip.data, 1], ["instance_user", form.instance_user.data, 1], ["instance_password", form.instance_password.data, 1], ["ssh_port", form.ssh_port.data, 1]]
+            fields_tup = [["pfsense_name", form.instance_name.data, 1], ["hostname", form.hostname.data, 1], ["reachable_ip", form.reachable_ip.data, 1], ["instance_user", form.instance_user.data, 1], ["instance_password", form.instance_password.data, 1], ["ssh_port", form.ssh_port.data, 1], ["address", form.address.data, 3]]
             clause = ""
             for item in fields_tup:
                 if(item[1] == ""):
@@ -412,6 +436,11 @@ WHERE pfsense_instances.id = {}"""
                         element = '"' + item[1] + '"'
                     elif(item[2] == 2):
                         element = item[1]
+                    elif(item[2] == 3):
+                        element = '"' + item[1] + '"'
+                        long, lat = long_lat_calc(item[1])
+                        query = """UPDATE pfsense_instances SET longtitude = {}, latitude = {} WHERE id = {}"""
+                        update_db(query.format(str(long), str(lat), str(id)))
                     clause = clause + item[0] + " = " + element + ", "
             clause = clause[:-2]
             update_query = """UPDATE pfsense_instances SET {} WHERE id = {}"""
