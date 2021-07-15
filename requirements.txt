@@ -7,3 +7,5 @@ mysql-connector-python
 datetime
 waitress
 cryptography
+folium
+geopy
