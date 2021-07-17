@@ -3,6 +3,7 @@
 #HTML TEMPLATES REQUIRED, SHOULD BE PUT IN FOLDER ALONGSIDE PYTHON FILE /TEMPLATES/*
 
 #-----LIBRARIES-----
+from sys import prefix
 from flask import Flask, render_template, session, redirect, url_for
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
@@ -280,11 +281,35 @@ def map():
         folium_map = folium.Map(location=start_coords, zoom_start=6)
         instance_details_query = """SELECT id, pfsense_name, latitude, longtitude FROM pfsense_instances"""
         results = query_db(instance_details_query)
+        instance_last_log = """SELECT record_time FROM pfsense_logs WHERE pfsense_instance = {} ORDER BY record_time DESC LIMIT 1"""
         for instance in results:
-            folium.Marker(
-                [float(instance[2]), float(instance[3])],
-                popup = instance[1]
-            ).add_to(folium_map)
+            logging.warning(str(instance))
+            try:
+                last_record_time = query_db(instance_last_log.format(str(instance[0])))[0][0]
+                now = datetime.now()
+                time_delta = (now - last_record_time)
+                total_seconds = time_delta.total_seconds()
+                if(total_seconds < 121):
+                    logging.warning("Success")
+                    folium.Marker(
+                        [float(instance[2]), float(instance[3])],
+                        popup = instance[1],
+                        icon=folium.Icon(color="blue", icon="sitemap", prefix="fa")
+                    ).add_to(folium_map)
+                else:
+                    logging.warning("No Recent Logs")
+                    folium.Marker(
+                        [float(instance[2]), float(instance[3])],
+                        popup = instance[1],
+                        icon=folium.Icon(color="red", icon="sitemap", prefix="fa")
+                    ).add_to(folium_map)
+            except:
+                logging.warning("Query Failed")
+                folium.Marker(
+                    [float(instance[2]), float(instance[3])],
+                    popup = instance[1],
+                    icon=folium.Icon(color="gray", icon="sitemap", prefix="fa")
+                ).add_to(folium_map)
         return folium_map._repr_html_()
     else:
         user_auth_error_page()
