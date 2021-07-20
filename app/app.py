@@ -268,8 +268,9 @@ def home():
             name = ";" + str(instance[1])
             id = str(instance[0])
             instances = instances + [[name, str(instance[2]), str(instance[3]), last_time, daily_error_percent, weekly_error_percent, joint_error_percent, "/instance_logs/" + id + "-0;Logs", "/instance_details/" + id + ";Details"]]
+            buttons = [["/map", "Network Map"]]
         #Render homepage based on index_form.html template
-        return render_template("vertical_table.html", heading="Homepage", headings=headings, collection=instances)
+        return render_template("vertical_table_page_buttons.html", heading="Homepage", headings=headings, collection=instances, buttons=buttons)
     else:
         user_auth_error_page()
 
@@ -397,7 +398,9 @@ pfsense_source_ip.ip,
 source_port,
 pfsense_destination_ip.ip,
 destination_port,
-previous_day_ml_check
+previous_day_ml_check,
+previous_week_ml_check,
+combined_ml_check
 FROM pfsense_logs
 LEFT JOIN pfsense_real_interface ON pfsense_logs.real_interface = pfsense_real_interface.id
 LEFT JOIN pfsense_reason ON pfsense_logs.reason = pfsense_reason.id
@@ -417,7 +420,7 @@ LIMIT {}, {}"""
                 item = str(item)
                 new_row = new_row + [item]
             final_results = final_results + [new_row]
-        headings = ["Time", "Rule Number", "Interface", "Reason", "Act", "Direction", "IP Version", "Protocol", "Source IP", "Source Port", "Destination IP", "Destination Port", "ML Check"]
+        headings = ["Time", "Rule Number", "Interface", "Reason", "Act", "Direction", "IP Version", "Protocol", "Source IP", "Source Port", "Destination IP", "Destination Port", "Daily ML Check", "Weekly ML Check", "Combined ML Check"]
         return render_template("table_button-next_back.html", heading="Log Results", table_headings=headings, data_collection=final_results, form=form)
     else:
         user_auth_error_page()
