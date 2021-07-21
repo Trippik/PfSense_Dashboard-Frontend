@@ -443,6 +443,14 @@ FROM pfsense_instances
 LEFT JOIN freebsd_version ON pfsense_instances.freebsd_version = freebsd_version.id
 LEFT JOIN pfsense_release ON pfsense_instances.pfsense_release = pfsense_release.id
 WHERE pfsense_instances.id = {}"""
+        interfaces_query = """SELECT 
+`interface_description`,
+`interface_name`,
+`mac_address`,
+`ipv6_address`,
+`ipv4_address`,
+`interface_type`
+FROM `pfsense_instance_interfaces` WHERE pfsense_instance = {}"""
         instance_results = query_db(instance_details_query.format(str(id)))[0]
         pre_amble_tup = ["Name", "Hostname", "Reachable IP", "Instance User", "Instance Password", "SSH Port", "FreeBSD Version", "PfSense Release"]
         final_tup = []
@@ -454,6 +462,8 @@ WHERE pfsense_instances.id = {}"""
             item = [[pre_amble_tup[element_count], result_element]]
             final_tup = final_tup + item
             element_count = element_count + 1
+        instance_int = query_db(interfaces_query.format(str(id)))
+        headings_tup = ["Interface Name", "Interface", "MAC Address", "IPv6", "IPv4", "Interface Type"]
         if form.validate_on_submit():
             fields_tup = [["pfsense_name", form.instance_name.data, 1], ["hostname", form.hostname.data, 1], ["reachable_ip", form.reachable_ip.data, 1], ["instance_user", form.instance_user.data, 1], ["instance_password", form.instance_password.data, 1], ["ssh_port", form.ssh_port.data, 1], ["address", form.address.data, 3]]
             clause = ""
@@ -477,7 +487,7 @@ WHERE pfsense_instances.id = {}"""
             update_query = """UPDATE pfsense_instances SET {} WHERE id = {}"""
             update_db(update_query.format(clause, str(id)))
             return (redirect('/instance_details/' + str(id)))
-        return render_template("index_multiline_bold.html", heading="Instance Details", messages=final_tup, buttons=buttons_tup, form=form)
+        return render_template("instance_details.html", heading="Instance Details", headings=headings_tup, collection=instance_int, messages=final_tup, buttons=buttons_tup, form=form)
     else:
       user_auth_error_page()
 
