@@ -288,9 +288,10 @@ def map():
             try:
                 last_record_time = query_db(instance_last_log.format(str(instance[0])))[0][0]
                 now = datetime.now()
+                logging.warning(now.strftime("%H:%M:%S"))
                 time_delta = (now - last_record_time)
                 total_seconds = time_delta.total_seconds()
-                if(total_seconds < 121):
+                if(total_seconds < 300):
                     logging.warning("Success")
                     folium.Marker(
                         [float(instance[2]), float(instance[3])],
@@ -304,6 +305,17 @@ def map():
                         popup = instance[1],
                         icon=folium.Icon(color="red", icon="sitemap", prefix="fa")
                     ).add_to(folium_map)
+                try:
+                    ipsec_query_1 = """SELECT remote_connection FROM pfsense_ipsec_connections WHERE pfsense_instance = {}"""
+                    ipsec_query_2 = """SELECT pfsense_instance FROM pfsense_instance_interfaces WHERE ipv4_address = '{}'"""
+                    ipsec_query_3 = """SELECT latitude, longtitude FROM pfsense_instances WHERE id = {}"""
+                    results = query_db(ipsec_query_1.format(str(instance[0])))
+                    for item in results:
+                        remote_instance = query_db(ipsec_query_2.format(str(item[0])))[0][0]
+                        remote_lat, remote_long = query_db(ipsec_query_3.format(str(remote_instance)))[0]
+                        folium.PolyLine([[float(instance[2]), float(instance[3])], [remote_lat, remote_long]], color="black", weight=2.5, opacity=1).add_to(folium_map)
+                except:
+                    pass
             except:
                 logging.warning("Query Failed")
                 folium.Marker(
