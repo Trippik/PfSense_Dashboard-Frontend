@@ -522,6 +522,15 @@ WHERE pfsense_instances.id = {}"""
 `ipv4_address`,
 `interface_type`
 FROM `pfsense_instance_interfaces` WHERE pfsense_instance = {}"""
+        ipsec_query = """SELECT 
+remote_connection, 
+pfsense_instances.pfsense_name, 
+local_ranges, 
+remote_ranges 
+FROM pfsense_ipsec_connections 
+LEFT JOIN pfsense_instance_interfaces ON pfsense_ipsec_connections.remote_connection = pfsense_instance_interfaces.ipv4_address 
+LEFT JOIN pfsense_instances ON pfsense_instance_interfaces.pfsense_instance = pfsense_instances.id
+WHERE pfsense_ipsec_connections.pfsense_instance = {}"""
         instance_results = query_db(instance_details_query.format(str(id)))[0]
         pre_amble_tup = ["Name", "Hostname", "Reachable IP", "Instance User", "Instance Password", "SSH Port", "FreeBSD Version", "PfSense Release"]
         final_tup = []
@@ -534,7 +543,19 @@ FROM `pfsense_instance_interfaces` WHERE pfsense_instance = {}"""
             final_tup = final_tup + item
             element_count = element_count + 1
         instance_int = query_db(interfaces_query.format(str(id)))
-        headings_tup = ["Interface Name", "Interface", "MAC Address", "IPv6", "IPv4", "Interface Type"]
+        headings_int = ["Interface Name", "Interface", "MAC Address", "IPv6", "IPv4", "Interface Type"]
+        ipsec_results = query_db(ipsec_query.format(str(id)))
+        results_ipsec = []
+        for row in ipsec_results:
+            new_row = []
+            for item in row:
+                if(item == None):
+                    new_item = "Not in Database"
+                else:
+                    new_item = item
+                new_row = new_row + [new_item]
+            results_ipsec = results_ipsec + [new_row]
+        ipsec_headings = ["Remote Connection", "Remote Instance", "Local Ranges", "Remote Ranges"]
         if form.validate_on_submit():
             fields_tup = [["pfsense_name", form.instance_name.data, 1], ["hostname", form.hostname.data, 1], ["reachable_ip", form.reachable_ip.data, 1], ["instance_user", form.instance_user.data, 1], ["instance_password", form.instance_password.data, 1], ["ssh_port", form.ssh_port.data, 1], ["address", form.address.data, 3]]
             clause = ""
@@ -558,7 +579,7 @@ FROM `pfsense_instance_interfaces` WHERE pfsense_instance = {}"""
             update_query = """UPDATE pfsense_instances SET {} WHERE id = {}"""
             update_db(update_query.format(clause, str(id)))
             return (redirect('/instance_details/' + str(id)))
-        return render_template("instance_details.html", heading="Instance Details", headings=headings_tup, collection=instance_int, messages=final_tup, buttons=buttons_tup, form=form)
+        return render_template("instance_details.html", heading="Instance Details", headings_int=headings_int, collection_int=instance_int, headings_ipsec=ipsec_headings, collection_ipsec=results_ipsec, messages=final_tup, buttons=buttons_tup, form=form)
     else:
       user_auth_error_page()
 
