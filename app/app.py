@@ -357,15 +357,28 @@ LIMIT 50"""
         user_auth_error_page()
 
 #PER INSTANCE OPENVPN PAGE
-@app.route("/instance_openvpn/<id>", methods=["GET", "POST"])
-def instance_openvpn(id):
+@app.route("/instance_openvpn/<id>-<offset>", methods=["GET", "POST"])
+def instance_openvpn(id, offset):
     if(basic_page_verify(session["id"]) == True):
-        query = """SELECT record_time, vpn_user.user_name, vpn_user.id FROM open_vpn_access_log
-LEFT JOIN vpn_user ON open_vpn_access_log.vpn_user = vpn_user.id
-WHERE open_vpn_access_log.pfsense_instance = {}
-ORDER BY record_time DESC 
-LIMIT 50"""
-        results = query_db(query.format(id))
+        form = PreviousNext()
+        if form.validate_on_submit():
+            if form.previous_page.data:
+                new_offset = int(offset) - 50
+                if(new_offset > -1):
+                    new_offset = str(new_offset)
+                    return redirect("/instance_openvpn/" + str(id) + "-" + str(new_offset))
+                else:
+                    pass
+            elif form.next_page.data:
+                new_offset = int(offset) + 50
+                if(new_offset > 0):
+                    new_offset = str(new_offset)
+                    return redirect("/instance_openvpn/" + str(id) + "-" + str(new_offset))
+                else:
+                    pass
+        query = """SELECT record_time, vpn_user.user_name, vpn_user.id FROM open_vpn_access_log LEFT JOIN vpn_user ON open_vpn_access_log.vpn_user = vpn_user.id WHERE open_vpn_access_log.pfsense_instance = {} ORDER BY record_time DESC LIMIT {}, {}"""
+        logging.warning(query.format(id, offset, "50"))
+        results = query_db(query.format(id, offset, "50"))
         filtered_results = []
         for row in results:
             new_row = []
@@ -373,11 +386,53 @@ LIMIT 50"""
                 item = str(item)
                 new_row = new_row + [item]
             filtered_results = filtered_results + [new_row]
+        logging.warning(filtered_results)
         final_results = []
         for row in filtered_results:
             final_results = final_results + [[row[0], row[1], "/vpn_user/" + row[2] + ";User Details"]]
+        logging.warning(final_results)
         headings = ["Login Time", "User", "PfSense Instance"]
-        return render_template("vertical_table.html", heading="OpenVPN Logins", headings=headings, collection=final_results)
+        return render_template("table_button-next_back.html", heading="OpenVPN Logins", table_headings=headings, data_collection=final_results, form=form)
+    else:
+        user_auth_error_page()
+
+#PER INSTANCE SYSTEM USERS PAGE
+@app.route("/instance_users/<id>-<offset>", methods=["GET", "POST"])
+def instance_users(id, offset):
+    if(basic_page_verify(session["id"]) == True):
+        form = PreviousNext()
+        if form.validate_on_submit():
+            if form.previous_page.data:
+                new_offset = int(offset) - 50
+                if(new_offset > -1):
+                    new_offset = str(new_offset)
+                    return redirect("/instance_users/" + str(id) + "-" + str(new_offset))
+                else:
+                    pass
+            elif form.next_page.data:
+                new_offset = int(offset) + 50
+                if(new_offset > 0):
+                    new_offset = str(new_offset)
+                    return redirect("/instance_users/" + str(id) + "-" + str(new_offset))
+                else:
+                    pass
+        query = """SELECT user_name, user_group, user_description FROM pfsense_instance_users WHERE pfsense_instance = {} ORDER BY user_name ASC LIMIT {}, {} """
+        logging.warning(query.format(id, offset, "50"))
+        results = query_db(query.format(id, offset, "50"))
+        filtered_results = []
+        for row in results:
+            new_row = []
+            for item in row:
+                item = str(item)
+                new_row = new_row + [item]
+            filtered_results = filtered_results + [new_row]
+        logging.warning(filtered_results)
+        final_results = []
+        for row in filtered_results:
+            final_results = final_results + [[row[0], row[1], row[2]]]
+        logging.warning(final_results)
+        headings = ["Username", "User Group", "Description"]
+        return render_template("table_button-next_back.html", heading="Instance Users", table_headings=headings, data_collection=final_results, form=form)
     else:
         user_auth_error_page()
 
@@ -389,7 +444,7 @@ def instance_logs(id, offset):
         if form.validate_on_submit():
             if form.previous_page.data:
                 new_offset = int(offset) - 50
-                if(new_offset > 0):
+                if(new_offset > -1):
                     new_offset = str(new_offset)
                     return redirect("/instance_logs/" + str(id) + "-" + str(new_offset))
                 else:
@@ -472,7 +527,7 @@ FROM `pfsense_instance_interfaces` WHERE pfsense_instance = {}"""
         final_tup = []
         max_count = len(pre_amble_tup)
         element_count = 0
-        buttons_tup = [["/instance_rules/" + str(id), "Firewall Rules"], ["/instance_logs/" + str(id), "Instance Logs"], ["/instance_openvpn/" + str(id), "Instance OpenVPN Log"], ["/instance_users/" + str(id), "Instance Users"]]
+        buttons_tup = [["/instance_rules/" + str(id), "Firewall Rules"], ["/instance_logs/" + str(id) + "-0", "Instance Logs"], ["/instance_openvpn/" + str(id) + "-0", "Instance OpenVPN Log"], ["/instance_users/" + str(id) + "-0", "Instance Users"]]
         while(element_count < max_count):
             result_element = str(instance_results[element_count])
             item = [[pre_amble_tup[element_count], result_element]]
@@ -552,7 +607,15 @@ AND ssh_port = {}"""
     else:
         user_auth_error_page()
 
-    
+#REPORT CONFIGURATION
+@app.route("/report_configuration", methods=["GET", "POST"])
+def report_configuration():
+    if(basic_page_verify(session["id"]) == True):
+        buttons = [["/ovpn_report_config", "OpenVPN Report Configuration"], ["/instance_log_report_config", "Per Log Error Report Configuration"]]
+        return render_template("index_buttons.html", heading="Report Configuration", messages="Please select the daily report you would like to configure:", buttons=buttons)
+    else:
+        user_auth_error_page()   
+
 #----------------------------------------------------
 #SERVE SITE
 #----------------------------------------------------
