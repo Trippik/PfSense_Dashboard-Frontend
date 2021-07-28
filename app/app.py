@@ -191,6 +191,13 @@ class PreviousNext(FlaskForm):
     previous_page = SubmitField("Previous Page", validators=[Optional()])
     next_page = SubmitField("Next Page", validators=[Optional()])
 
+#Form for OpenVPN report config page
+class OpenVPNReportConfig(FlaskForm):
+    reciever_name = StringField("Name", validators=[DataRequired()])
+    reciever_address = StringField("Email", validators=[DataRequired()])
+    submit = SubmitField("Add Reciever", validators=[Optional()])
+
+
 #----------------------------------------------------
 #WEB APP PAGES
 #----------------------------------------------------
@@ -636,6 +643,22 @@ def report_configuration():
         return render_template("index_buttons.html", heading="Report Configuration", messages="Please select the daily report you would like to configure:", buttons=buttons)
     else:
         user_auth_error_page()   
+
+#REPORT CONFIGURATION
+@app.route("/ovpn_report_config", methods=["GET", "POST"])
+def ovpn_report_config():
+    if(basic_page_verify(session["id"]) == True):
+        form = OpenVPNReportConfig()
+        query = """SELECT id, reciever_name, reciever_address FROM open_vpn_report_recievers"""
+        raw_results = query_db(query)
+        final_results = []
+        for row in raw_results:
+            new_row = [row[1], row[2], "/open_vpn_report_reciever_delete/" + str(row[0]) + ";Remove Reciever Entry"]
+            final_results = final_results + [new_row]
+        headings = ["Name", "Email"]
+        return render_template("table_form.html", heading="OpenVPN Report Configuration", headings=headings, collection=final_results, form=form)
+    else:
+        user_auth_error_page()
 
 #----------------------------------------------------
 #SERVE SITE
