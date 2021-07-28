@@ -644,19 +644,71 @@ def report_configuration():
     else:
         user_auth_error_page()   
 
-#REPORT CONFIGURATION
+#OPENVPN REPORT CONFIGURATION
 @app.route("/ovpn_report_config", methods=["GET", "POST"])
 def ovpn_report_config():
     if(basic_page_verify(session["id"]) == True):
         form = OpenVPNReportConfig()
         query = """SELECT id, reciever_name, reciever_address FROM open_vpn_report_recievers"""
+        insert_reciever = """INSERT INTO open_vpn_report_recievers (reciever_name, reciever_address) VALUES ("{}", "{}")"""
         raw_results = query_db(query)
         final_results = []
         for row in raw_results:
             new_row = [row[1], row[2], "/open_vpn_report_reciever_delete/" + str(row[0]) + ";Remove Reciever Entry"]
             final_results = final_results + [new_row]
         headings = ["Name", "Email"]
+        if form.validate_on_submit():
+            user_name = form.reciever_name.data
+            user_address = form.reciever_address.data
+            update_db(insert_reciever.format(user_name, user_address))
+            return(redirect("/ovpn_report_config"))
         return render_template("table_form.html", heading="OpenVPN Report Configuration", headings=headings, collection=final_results, form=form)
+    else:
+        user_auth_error_page()
+
+#OPENVPN RECIEVER DELETE
+@app.route("/open_vpn_report_reciever_delete/<id>", methods=["GET", "POST"])
+def ovpn_report_reciever_delete(id):
+    if(basic_page_verify(session["id"]) == True):
+        query = """DELETE FROM open_vpn_report_recievers WHERE id = {}"""
+        update_db(query.format(id))
+        return(redirect("/ovpn_report_config"))
+    else:
+        user_auth_error_page()
+
+#INSTANCE LOGS REPORT CONFIGURATION
+@app.route("/instance_log_report_config", methods=["GET", "POST"])
+def instance_log_report_config():
+    if(basic_page_verify(session["id"]) == True):
+        form = OpenVPNReportConfig()
+        query = """SELECT combined_reports_recievers.id, 
+reciever_name, 
+receiver_address, 
+reciever_description, 
+instance_id, 
+pfsense_instances.pfsense_name 
+FROM combined_reports_recievers 
+LEFT JOIN pfsense_instances ON combined_reports_recievers.instance_id = pfsense_instances.id"""
+        insert_reciever = """INSERT INTO open_vpn_report_recievers (reciever_name, reciever_address) VALUES ("{}", "{}")"""
+        raw_results = query_db(query)
+        final_results = []
+        for row in raw_results:
+            data_tup = []
+            for item in row:
+                if(item == None):
+                    new_item = "NA"
+                else:
+                    new_item = item
+                data_tup = data_tup + [new_item]
+            new_row = [data_tup[1], data_tup[2], data_tup[3], data_tup[5], "/instance_log_report_reciever_delete/" + str(data_tup[0]) + "-" + str(data_tup[4]) + ";Remove Reciever Entry"]
+            final_results = final_results + [new_row]
+        headings = ["Name", "Email", "Description", "Instance Name"]
+        if form.validate_on_submit():
+            user_name = form.reciever_name.data
+            user_address = form.reciever_address.data
+            update_db(insert_reciever.format(user_name, user_address))
+            return(redirect("/ovpn_report_config"))
+        return render_template("table_form.html", heading="Combined Log Errors Report Configuration", headings=headings, collection=final_results, form=form)
     else:
         user_auth_error_page()
 
