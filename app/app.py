@@ -132,6 +132,11 @@ def long_lat_calc(address):
     long = address_data.longitude
     return(long, lat)
 
+def return_client_options():
+    query = """SELECT id, pfsense_name FROM pfsense_instances ORDER BY pfsense_name ASC"""
+    clients = query_db(query)
+    return(clients)
+
 #----------------------------------------------------
 #PRESET FORMS
 #----------------------------------------------------
@@ -195,6 +200,13 @@ class PreviousNext(FlaskForm):
 class OpenVPNReportConfig(FlaskForm):
     reciever_name = StringField("Name", validators=[DataRequired()])
     reciever_address = StringField("Email", validators=[DataRequired()])
+    submit = SubmitField("Add Reciever", validators=[Optional()])
+
+#Form for logs report config page
+class LogsReportConfig(FlaskForm):
+    reciever_name = StringField("Name", validators=[DataRequired()])
+    reciever_address = StringField("Email", validators=[DataRequired()])
+    instance = SelectField("PfSense Instance", choices=return_client_options(), validators=[DataRequired()])
     submit = SubmitField("Add Reciever", validators=[Optional()])
 
 
@@ -680,16 +692,15 @@ def ovpn_report_reciever_delete(id):
 @app.route("/instance_log_report_config", methods=["GET", "POST"])
 def instance_log_report_config():
     if(basic_page_verify(session["id"]) == True):
-        form = OpenVPNReportConfig()
+        form = LogsReportConfig()
         query = """SELECT combined_reports_recievers.id, 
 reciever_name, 
 receiver_address, 
-reciever_description, 
 instance_id, 
 pfsense_instances.pfsense_name 
 FROM combined_reports_recievers 
 LEFT JOIN pfsense_instances ON combined_reports_recievers.instance_id = pfsense_instances.id"""
-        insert_reciever = """INSERT INTO open_vpn_report_recievers (reciever_name, reciever_address) VALUES ("{}", "{}")"""
+        insert_reciever = """INSERT INTO combined_reports_recievers (`instance_id`, `reciever_name`, `receiver_address`) VALUES ({}, "{}", "{}");"""
         raw_results = query_db(query)
         final_results = []
         for row in raw_results:
@@ -700,15 +711,26 @@ LEFT JOIN pfsense_instances ON combined_reports_recievers.instance_id = pfsense_
                 else:
                     new_item = item
                 data_tup = data_tup + [new_item]
-            new_row = [data_tup[1], data_tup[2], data_tup[3], data_tup[5], "/instance_log_report_reciever_delete/" + str(data_tup[0]) + "-" + str(data_tup[4]) + ";Remove Reciever Entry"]
+            new_row = [data_tup[1], data_tup[2], data_tup[4], "/instance_log_report_reciever_delete/" + str(data_tup[0]) + ";Remove Reciever Entry"]
             final_results = final_results + [new_row]
-        headings = ["Name", "Email", "Description", "Instance Name"]
+        headings = ["Name", "Email", "Instance Name"]
         if form.validate_on_submit():
-            user_name = form.reciever_name.data
-            user_address = form.reciever_address.data
-            update_db(insert_reciever.format(user_name, user_address))
-            return(redirect("/ovpn_report_config"))
+            instance = form.instance.data
+            reciever_name = form.reciever_name.data
+            reciever_address = form.reciever_address.data
+            update_db(insert_reciever.format(instance, reciever_name, reciever_address))
+            return(redirect("/instance_log_report_config"))
         return render_template("table_form.html", heading="Combined Log Errors Report Configuration", headings=headings, collection=final_results, form=form)
+    else:
+        user_auth_error_page()
+
+#LOGS REPORT RECIEVER DELETE
+@app.route("/instance_log_report_reciever_delete/<id>", methods=["GET", "POST"])
+def instance_log_report_reciever_delete(id):
+    if(basic_page_verify(session["id"]) == True):
+        query = """DELETE FROM combined_reports_recievers WHERE id = {}"""
+        update_db(query.format(id))
+        return(redirect("/instance_log_report_config"))
     else:
         user_auth_error_page()
 
