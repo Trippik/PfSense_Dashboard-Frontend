@@ -7,7 +7,7 @@ from sys import prefix
 from flask import Flask, render_template, session, redirect, url_for
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
-from wtforms import StringField, DecimalField, SubmitField, PasswordField, HiddenField, DateField, IntegerField, SelectField, RadioField
+from wtforms import StringField, DecimalField, SubmitField, PasswordField, HiddenField, DateField, IntegerField, SelectField, RadioField, TextAreaField
 from wtforms.validators import DataRequired, Optional
 import mysql.connector
 import datetime
@@ -179,6 +179,7 @@ class InstanceDetailsForm(FlaskForm):
     instance_password = StringField("Instance Password", validators=[Optional()])
     ssh_port = IntegerField("SSH Port", validators=[Optional()])
     address = StringField("Address", validators=[Optional()])
+    private_key = TextAreaField('OpenSSH Private Key', render_kw={"rows": 15, "cols": 11})
     submit = SubmitField("Alter Record", validators=[Optional()])
 
 #Form for Adding new Instance
@@ -576,7 +577,7 @@ WHERE pfsense_ipsec_connections.pfsense_instance = {}"""
             results_ipsec = results_ipsec + [new_row]
         ipsec_headings = ["Remote Connection", "Remote Instance", "Local Ranges", "Remote Ranges"]
         if form.validate_on_submit():
-            fields_tup = [["pfsense_name", form.instance_name.data, 1], ["hostname", form.hostname.data, 1], ["reachable_ip", form.reachable_ip.data, 1], ["instance_user", form.instance_user.data, 1], ["instance_password", form.instance_password.data, 1], ["ssh_port", form.ssh_port.data, 1], ["address", form.address.data, 3]]
+            fields_tup = [["pfsense_name", form.instance_name.data, 1], ["hostname", form.hostname.data, 1], ["reachable_ip", form.reachable_ip.data, 1], ["instance_user", form.instance_user.data, 1], ["instance_password", form.instance_password.data, 1], ["ssh_port", form.ssh_port.data, 1], ["address", form.address.data, 3], ["private_key", form.private_key.data, 1]]
             clause = ""
             for item in fields_tup:
                 if(item[1] == ""):
