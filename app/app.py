@@ -137,6 +137,21 @@ def return_client_options():
     clients = query_db(query)
     return(clients)
 
+def password_hash_generate(prov_pass, element):
+    password_provided = prov_pass
+    password = password_provided.encode() 
+    salt = element
+    salt = salt.encode()
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=200000,
+        backend=default_backend()
+    )
+    key = base64.urlsafe_b64encode(kdf.derive(password)) 
+    return(key.decode())
+
 #----------------------------------------------------
 #PRESET FORMS
 #----------------------------------------------------
@@ -210,6 +225,11 @@ class LogsReportConfig(FlaskForm):
     instance = SelectField("PfSense Instance", choices=return_client_options(), validators=[DataRequired()])
     submit = SubmitField("Add Reciever", validators=[Optional()])
 
+#Form for adding new dashboard users
+class DashboardUsers(FlaskForm):
+    name = StringField("Name", validators=[DataRequired()])
+    password = PasswordField("Password", validators=[DataRequired()])
+    submit = SubmitField("Add New User", validators=[Optional()])
 
 #----------------------------------------------------
 #WEB APP PAGES
@@ -732,6 +752,40 @@ def instance_log_report_reciever_delete(id):
         query = """DELETE FROM combined_reports_recievers WHERE id = {}"""
         update_db(query.format(id))
         return(redirect("/instance_log_report_config"))
+    else:
+        user_auth_error_page()
+
+#DASHBOARD USERS MANAGEMENT
+@app.route("/dashboard_user_management", methods=["GET", "POST"])
+def dashboard_user_management():
+    if(basic_page_verify(session["id"]) == True):
+        form = DashboardUsers()
+        select_query = """SELECT id, user_name FROM dashboard_user"""
+        raw_results = query_db(select_query)
+        users_lines = []
+        for row in raw_results:
+            new_line = [row[1], "/dashboard_user_delete/" + str(row[0]) + ";Delete User"]
+            users_lines = users_lines + [new_line]
+        table_headings = ["Name"]
+        if form.validate_on_submit():
+            insert_query = """INSERT INTO dashboard_user (user_name, pass) VALUES ("{}", "{}")"""
+            user_name = form.name.data
+            prov_pass = form.password.data
+            salt = os.environ["SALT"]
+            salted_pass = password_hash_generate(prov_pass, salt)
+            update_db(insert_query.format(user_name, salted_pass))
+            return(redirect("/dashboard_user_management"))
+        return render_template("table_form.html", heading="Dashboard User Management", headings=table_headings, collection=users_lines, form=form)
+    else:
+        user_auth_error_page()
+
+#DASHBOARD USER DELETE
+@app.route("/dashboard_user_delete/<id>", methods=["GET", "POST"])
+def dashboard_user_delete(id):
+    if(basic_page_verify(session["id"]) == True):
+        query = """DELETE FROM dashboard_user WHERE id = {}"""
+        update_db(query.format(str(id)))
+        return(redirect("/dashboard_user_management"))
     else:
         user_auth_error_page()
 
