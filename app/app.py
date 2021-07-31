@@ -287,27 +287,31 @@ def home():
         instances_raw = query_db(instances_query)
         instances = []
         headings = ["Pfsense Name", "Hostname", "Reachable IP", "Last Log Entry", "Days Errors", "Weeks Errors", "Joint Errors"]
-        for instance in instances_raw:
-            try:
-                last_time = query_db(last_log_query.format(instance[0]))[0][0]
-                last_time = last_time.strftime('%Y-%m-%d %H:%M:%S')
-                now = datetime.now()
-                today = now.strftime('%Y-%m-%d')
-                log_count = int(query_db(count_days_logs.format(instance[0], last_time, today))[0][0])
-                daily_error_rate = int(query_db(count_days_errors.format(instance[0], last_time, today, "-1"))[0][0])
-                weekly_error_rate = int(query_db(count_week_errors.format(instance[0], last_time, today, "-1"))[0][0])
-                joint_error_rate = int(query_db(count_both_errors.format(instance[0], last_time, today, "-1", "-1"))[0][0])
-                daily_error_percent = percent_process(daily_error_rate, log_count)
-                weekly_error_percent = percent_process(weekly_error_rate, log_count)
-                joint_error_percent = percent_process(joint_error_rate, log_count)
-            except:
-                last_time = "No logs"
-                daily_error_percent = "NA"
-                weekly_error_percent = "NA"
-                joint_error_percent = "NA"
-            name = ";" + str(instance[1])
-            id = str(instance[0])
-            instances = instances + [[name, str(instance[2]), str(instance[3]), last_time, daily_error_percent, weekly_error_percent, joint_error_percent, "/instance_logs/" + id + "-0;Logs", "/instance_details/" + id + ";Details"]]
+        if(len(instances_raw) == 0):
+            instances = [["No Records"]]
+            buttons = [["/add_instance", "Add PfSense Instance"], ["/dashboard_user_management", "Dashboard User Manager"]]
+        else:
+            for instance in instances_raw:
+                try:
+                    last_time = query_db(last_log_query.format(instance[0]))[0][0]
+                    last_time = last_time.strftime('%Y-%m-%d %H:%M:%S')
+                    now = datetime.now()
+                    today = now.strftime('%Y-%m-%d')
+                    log_count = int(query_db(count_days_logs.format(instance[0], last_time, today))[0][0])
+                    daily_error_rate = int(query_db(count_days_errors.format(instance[0], last_time, today, "-1"))[0][0])
+                    weekly_error_rate = int(query_db(count_week_errors.format(instance[0], last_time, today, "-1"))[0][0])
+                    joint_error_rate = int(query_db(count_both_errors.format(instance[0], last_time, today, "-1", "-1"))[0][0])
+                    daily_error_percent = percent_process(daily_error_rate, log_count)
+                    weekly_error_percent = percent_process(weekly_error_rate, log_count)
+                    joint_error_percent = percent_process(joint_error_rate, log_count)
+                except:
+                    last_time = "No logs"
+                    daily_error_percent = "NA"
+                    weekly_error_percent = "NA"
+                    joint_error_percent = "NA"
+                name = ";" + str(instance[1])
+                id = str(instance[0])
+                instances = instances + [[name, str(instance[2]), str(instance[3]), last_time, daily_error_percent, weekly_error_percent, joint_error_percent, "/instance_logs/" + id + "-0;Logs", "/instance_details/" + id + ";Details"]]
             buttons = [["/map", "Network Map"]]
         #Render homepage based on index_form.html template
         return render_template("vertical_table_page_buttons.html", heading="Homepage", headings=headings, collection=instances, buttons=buttons)
