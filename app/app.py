@@ -580,7 +580,7 @@ WHERE pfsense_ipsec_connections.pfsense_instance = {}"""
         final_tup = []
         max_count = len(pre_amble_tup)
         element_count = 0
-        buttons_tup = [["/instance_rules/" + str(id), "Firewall Rules"], ["/instance_logs/" + str(id) + "-0", "Instance Logs"], ["/instance_openvpn/" + str(id) + "-0", "Instance OpenVPN Log"], ["/instance_users/" + str(id) + "-0", "Instance Users"]]
+        buttons_tup = [["/instance_rules/" + str(id), "Firewall Rules"], ["/instance_logs/" + str(id) + "-0", "Instance Logs"], ["/instance_openvpn/" + str(id) + "-0", "Instance OpenVPN Log"], ["/instance_users/" + str(id) + "-0", "Instance Users"], ["/delete_instance/" + str(id), "Delete Instance"]]
         while(element_count < max_count):
             result_element = str(instance_results[element_count])
             item = [[pre_amble_tup[element_count], result_element]]
@@ -790,6 +790,25 @@ def dashboard_user_delete(id):
         query = """DELETE FROM dashboard_user WHERE id = {}"""
         update_db(query.format(str(id)))
         return(redirect("/dashboard_user_management"))
+    else:
+        user_auth_error_page()
+
+#INSTANCE DELETE
+@app.route("/delete_instance/<id>", methods=["GET", "POST"])
+def delete_instance(id):
+    if(basic_page_verify(session["id"]) == True):
+        deletion_queries = ["DELETE FROM combined_reports_recievers WHERE instance_id = {}",
+"DELETE FROM open_vpn_access_log WHERE pfsense_instance = {}",
+"DELETE FROM pfsense_firewall_rules WHERE pfsense_instance = {}",
+"DELETE FROM pfsense_instance_interfaces WHERE pfsense_instance = {}",
+"DELETE FROM pfsense_instance_users WHERE pfsense_instance = {}",
+"DELETE FROM pfsense_ipsec_connections WHERE pfsense_instance = {}",
+"DELETE FROM pfsense_openvpn_logs WHERE pfsense_instance = {}",
+"DELETE FROM pfsense_instances WHERE id = {}",
+"DELETE FROM pfsense_logs WHERE pfsense_instance = {}"]
+        for query in deletion_queries:
+            update_db(query.format(str(id)))
+        return(redirect("/home"))
     else:
         user_auth_error_page()
 
