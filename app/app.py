@@ -88,6 +88,19 @@ def select_values(table, value):
         options = options + tup
     return(options)
 
+def add_ip(ip):
+    query = "INSERT INTO pfsense_ip (ip) VALUES ('{}')"
+    update_db(query.format(ip))
+    find_ip(ip)
+
+def find_ip(ip):
+    query = "SELECT id FROM pfsense_ip WHERE ip = '{}'"
+    ip_id = query_db(query.format(ip))[0][0]
+    if(ip_id == "NULL" or ip_id == None):
+        add_ip(ip)
+    else:
+        return(ip_id)
+
 def query_where (where_tuples):
     query_part = "WHERE "
     for item in where_tuples:
@@ -230,6 +243,12 @@ class DashboardUsers(FlaskForm):
     name = StringField("Name", validators=[DataRequired()])
     password = PasswordField("Password", validators=[DataRequired()])
     submit = SubmitField("Add New User", validators=[Optional()])
+
+#Form for whitelist
+class WhitelistForm(FlaskForm):
+    ip = StringField("IP Address", validators=[DataRequired()])
+    port = IntegerField("Destination Port", validators=[DataRequired()])
+    submit = SubmitField("Add Entry", validators=[Optional()])
 
 #----------------------------------------------------
 #WEB APP PAGES
@@ -480,6 +499,43 @@ def instance_users(id, offset):
     else:
         user_auth_error_page()
 
+#PER INSTANCE WHITELIST PAGE
+@app.route("/instance_whitelist/<id>", methods=["GET", "POST"])
+def instance_whitelist(id):
+    if(basic_page_verify(session["id"]) == True):
+        form = WhitelistForm()
+        message = "You can specify exact origin IP addresses and ports that you want put on a whitelist for this instance below."
+        query = """SELECT whitelist.id, pfsense_ip.ip, destination_port FROM whitelist LEFT JOIN pfsense_ip ON whitelist.ip = pfsense_ip.id WHERE pfsense_instance = {}"""
+        whitelist_results = query_db(query.format(str(id)))
+        results = []
+        logging.warning(str(whitelist_results))
+        if(len(whitelist_results) == 0):
+            results = [["None"]]
+        elif(len(whitelist_results) > 0):
+            for row in whitelist_results:
+                results = results + [[row[1], str(row[2]), "/whitelist_delete/" + str(row[0]) + "-" + str(id) + ";Delete Entry"]]
+        headings_tup = ["IP Address", "Port"]
+        if form.validate_on_submit():
+            insert_query = """INSERT INTO whitelist (ip, destination_port, pfsense_instance) VALUES ({}, {}, {})"""
+            ip_id = find_ip(form.ip.data)
+            port = form.port.data
+            update_db(insert_query.format(str(ip_id), str(port), str(id)))
+            return redirect("/instance_whitelist/" + str(id))
+        return render_template("whitelist_page.html", heading="Instance Whitelist", message=message, form=form, table_headings=headings_tup, data_collection=results)
+    else:
+        user_auth_error_page()
+
+#WHITELIST DELETE
+@app.route("/whitelist_delete/<id>-<pf_id>", methods=["GET", "POST"])
+def whitelist_delete(id, pf_id):
+    if(basic_page_verify(session["id"]) == True):
+        query = """DELETE FROM whitelist WHERE id = {}"""
+        update_db(query.format(id))
+        return redirect("/instance_whitelist/" + pf_id)
+    else:
+        user_auth_error_page()
+
+
 #INSTANCE LOGS PAGE
 @app.route("/instance_logs/<id>-<offset>", methods=["GET", "POST"])
 def instance_logs(id, offset):
@@ -580,7 +636,7 @@ WHERE pfsense_ipsec_connections.pfsense_instance = {}"""
         final_tup = []
         max_count = len(pre_amble_tup)
         element_count = 0
-        buttons_tup = [["/instance_rules/" + str(id), "Firewall Rules"], ["/instance_logs/" + str(id) + "-0", "Instance Logs"], ["/instance_openvpn/" + str(id) + "-0", "Instance OpenVPN Log"], ["/instance_users/" + str(id) + "-0", "Instance Users"], ["/delete_instance/" + str(id), "Delete Instance"]]
+        buttons_tup = [["/instance_rules/" + str(id), "Firewall Rules"], ["/instance_logs/" + str(id) + "-0", "Instance Logs"], ["/instance_openvpn/" + str(id) + "-0", "Instance OpenVPN Log"], ["/instance_users/" + str(id) + "-0", "Instance Users"], ["/instance_whitelist/" + str(id), "Instance Whitelist"], ["/delete_instance/" + str(id), "Delete Instance"]]
         while(element_count < max_count):
             result_element = str(instance_results[element_count])
             item = [[pre_amble_tup[element_count], result_element]]
@@ -815,4 +871,4 @@ def delete_instance(id):
 #----------------------------------------------------
 #SERVE SITE
 #----------------------------------------------------
-serve(app, host="0.0.0.0", port=8080, threads=1)
+serve(app, host="0.0.0.0", port=8080, threads=str(os.environ["THREADS"]))
