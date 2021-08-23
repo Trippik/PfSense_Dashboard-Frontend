@@ -132,12 +132,6 @@ def select_option_generate(table, value, mode):
 def user_auth_error_page():
     return render_template("index.html", heading="Oops!", messages="It looks like you have ended up in the wrong place.")
 
-def percent_process(rate, total):
-    dec = rate / total
-    percent = int(dec * 100)
-    percent = str(percent) + "%"
-    return(percent)
-
 def long_lat_calc(address):
     geocoder = geopy.Nominatim(user_agent = os.environ["NOMINATIM_USER"])
     address_data = geocoder.geocode(address)
@@ -299,10 +293,7 @@ def home():
         form = HomeForm1()
         instances_query = """SELECT id, pfsense_name, hostname, reachable_ip FROM pfsense_instances ORDER BY pfsense_name DESC"""
         last_log_query = """SELECT record_time FROM pfsense_logs WHERE pfsense_instance = {} ORDER BY record_time DESC LIMIT 1"""
-        count_days_logs = """SELECT COUNT(*) FROM pfsense_logs WHERE pfsense_instance = {} AND record_time < '{}' AND record_time > '{}'"""
-        count_days_errors = """SELECT COUNT(*) FROM pfsense_logs WHERE pfsense_instance = {} AND record_time < '{}' AND record_time > '{}' AND previous_day_ml_check = {}"""
-        count_week_errors = """SELECT COUNT(*) FROM pfsense_logs WHERE pfsense_instance = {} AND record_time < '{}' AND record_time > '{}' AND previous_week_ml_check = {}"""
-        count_both_errors = """SELECT COUNT(*) FROM pfsense_logs WHERE pfsense_instance = {} AND record_time < '{}' AND record_time > '{}' AND previous_day_ml_check = {} AND previous_week_ml_check = {}"""
+        errors_query = """SELECT daily_error, weekly_error, joint_error FROM error_rates WHERE pfsense_instance = {}"""
         instances_raw = query_db(instances_query)
         instances = []
         headings = ["Pfsense Name", "Hostname", "Reachable IP", "Last Log Entry", "Days Errors", "Weeks Errors", "Joint Errors"]
@@ -314,15 +305,7 @@ def home():
                 try:
                     last_time = query_db(last_log_query.format(instance[0]))[0][0]
                     last_time = last_time.strftime('%Y-%m-%d %H:%M:%S')
-                    now = datetime.now()
-                    today = now.strftime('%Y-%m-%d')
-                    log_count = int(query_db(count_days_logs.format(instance[0], last_time, today))[0][0])
-                    daily_error_rate = int(query_db(count_days_errors.format(instance[0], last_time, today, "-1"))[0][0])
-                    weekly_error_rate = int(query_db(count_week_errors.format(instance[0], last_time, today, "-1"))[0][0])
-                    joint_error_rate = int(query_db(count_both_errors.format(instance[0], last_time, today, "-1", "-1"))[0][0])
-                    daily_error_percent = percent_process(daily_error_rate, log_count)
-                    weekly_error_percent = percent_process(weekly_error_rate, log_count)
-                    joint_error_percent = percent_process(joint_error_rate, log_count)
+                    daily_error_percent, weekly_error_percent, joint_error_percent = query_db(errors_query.format(str(instance[0])))[0]
                 except:
                     last_time = "No logs"
                     daily_error_percent = "NA"
