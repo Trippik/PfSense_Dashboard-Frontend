@@ -244,6 +244,13 @@ class WhitelistForm(FlaskForm):
     port = IntegerField("Destination Port", validators=[DataRequired()])
     submit = SubmitField("Add Entry", validators=[Optional()])
 
+#Form for OpenVPN acitivity search page
+class OVPNActivityForm(FlaskForm):
+    user_name = StringField("OpenVPN Username", validators=[Optional()])
+    instance = SelectField("PfSense Instance", choices=return_client_options(), validators=[DataRequired()])
+    submit = SubmitField("Search", validators=[Optional()])
+
+
 #----------------------------------------------------
 #WEB APP PAGES
 #----------------------------------------------------
@@ -848,6 +855,38 @@ def delete_instance(id):
         for query in deletion_queries:
             update_db(query.format(str(id)))
         return(redirect("/home"))
+    else:
+        user_auth_error_page()
+
+#SEARCH OPENVPN ACCESS LOGS
+@app.route("/openvpn_access_log_search", methods=["GET", "POST"])
+def openvpn_access_log_search():
+    if(basic_page_verify(session["id"]) == True):
+        form = OVPNActivityForm()
+        query = """SELECT 
+vpn_user.user_name,
+record_time,
+pfsense_instances.pfsense_name,
+FROM open_vpn_access_log
+WHERE {} 
+LEFT JOIN vpn_user ON open_vpn_access_log.vpn_user = vpn_user.id
+LEFT JOIN pfsense_instances ON open_vpn_access_log.pfsense_instance = pfsense_instances.id"""
+        if form.validate_on_submit():
+            elements = [[form.user_name, "vpn_user.user_name", 1], [form.instance, "open_vpn_access_log.pfsense_instance", 2]]
+            where_clause = ""
+            for element in elements:
+                value = element[0]
+                field = element[1]
+                mode = element[3]
+                if(value != None):
+                    if(mode == 1):
+                        where_clause = where_clause + field + ' LIKE "' + value + '"'
+                    elif(mode == 2):
+                        where_clause = where_clause + field + ' = ' + value
+            query = query.format(query.where_clause)
+            session["query"] = query
+            return(redirect("/open_vpn_access_search_results"))
+        return render_template("form.html", heading="OpenVPN Access Log Search", form=form)
     else:
         user_auth_error_page()
 
