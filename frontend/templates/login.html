@@ -1,0 +1,34 @@
+{% extends "main.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% block title %}
+    {{ super() }}
+{% endblock %}
+{% block navbar %}
+<div class="navbar navbar-inverse" role="navigation" style="background-color: #242254; border-color: #242254;">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle"
+             data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/" style="color:#c8102e;"><b>PfSense Dashboard</b></a>
+        </div>
+        <div class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>{{ heading }}</h1>
+    </div>
+    {{ wtf.quick_form(form) }}
+</div>
+{% endblock %}
