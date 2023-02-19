@@ -1,7 +1,7 @@
 from flask import Blueprint, session, render_template, redirect
 import logging
 
-from frontend.lib import db_handler, web_handler, preset_forms
+from frontend.lib import db_handler, web_handler, preset_forms, location_handler
 
 instance_pages_blueprint = Blueprint('instance_pages_blueprint', __name__)
 
