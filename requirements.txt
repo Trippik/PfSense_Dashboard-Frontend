@@ -9,3 +9,4 @@ waitress
 cryptography
 folium
 geopy
+requests
