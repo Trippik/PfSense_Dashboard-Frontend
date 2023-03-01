@@ -132,9 +132,14 @@ LIMIT {}, {}"""
         final_results = []
         for row in results:
             new_row = []
+            count = 1
             for item in row:
-                item = str(item)
+                if count == 9 or count == 11:
+                    item = (f'<a href="/ip_details/{str(item)}">{str(item)}</a>')
+                else:
+                    item = str(item)
                 new_row = new_row + [item]
+                count = count + 1
             final_results = final_results + [new_row]
         headings = ["Time", "Rule Number", "Interface", "Reason", "Act", "Direction", "IP Version", "Protocol", "Source IP", "Source Port", "Destination IP", "Destination Port", "Daily ML Check", "Weekly ML Check", "Combined ML Check"]
         return render_template("table_button-next_back.html", heading="Log Results", table_headings=headings, data_collection=final_results, form=form)

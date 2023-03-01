@@ -22,6 +22,7 @@ from frontend.lib import db_handler, location_handler, password_handler, preset_
 from frontend.blueprints.ovpn_pages import ovpn_pages_blueprint
 from frontend.blueprints.instance_pages import instance_pages_blueprint
 from frontend.blueprints.system_pages import system_pages_blueprint
+from frontend.blueprints.ip_detail_pages import ip_details_pages_blueprint
 
 #Establish flask app
 app = Flask(__name__)
@@ -41,8 +42,10 @@ app.register_blueprint(ovpn_pages_blueprint)
 app.register_blueprint(instance_pages_blueprint)
 
 # Register system pages
-
 app.register_blueprint(system_pages_blueprint)
+
+# Register ip details pages
+app.register_blueprint(ip_details_pages_blueprint)
 
 #MAP
 @app.route('/map', methods=["GET","POST"])
