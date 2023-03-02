@@ -58,6 +58,30 @@
 {% endmacro %}
 
 
+{% macro make_table_link(table_headings, data_collection) %}
+    <table style="margin-left: auto; margin-right: auto; border: 1px solid black">
+        <tr>
+            {% for table_heading in table_headings %}
+                <th style="padding: 15px; border: 1px solid black">{{table_heading}}</th>
+            {% endfor %}
+        </tr>
+        {% for data_set in data_collection %}
+            <tr>
+            {% for data in data_set %}
+                {% if data.startswith("/") %}
+                    {% set list1 = data.split(';') %}
+                        <a href="{{list1[0]}}">{{list1[1]}}</a> 
+                        <td style="padding: 15px; border: 1px solid black"><a href="{{list1[0]}}">{{list1[1]}}</a> </td>
+                {% else %}
+                    <td style="padding: 15px; border: 1px solid black">{{data}}</td>
+                {% endif %}
+            {% endfor %}
+            </tr>
+        {% endfor %}
+    </table>
+{% endmacro %}
+
+
 {% macro make_table_button(table_headings, data_collection) %}
     <table style="margin-left: auto; margin-right: auto; border: 1px solid black">
         <tr>

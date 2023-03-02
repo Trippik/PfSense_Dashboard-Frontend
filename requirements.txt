@@ -10,3 +10,4 @@ cryptography
 folium
 geopy
 requests
+netaddr

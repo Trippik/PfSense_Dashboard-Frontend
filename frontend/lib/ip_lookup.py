@@ -11,6 +11,6 @@ def show_ip_map(ip_details):
     folium.Marker(
         [float(ip_details["latitude"]), float(ip_details["longitude"])],
         popup = ip_details["ip"] + "\n" + ip_details["connection"]["isp"],
-        icon=folium.Icon(color="blue", icon="sitemap", prefix="fa")
+        icon=folium.Icon(color="blue", icon="server", prefix="fa")
         ).add_to(folium_map)
     return folium_map

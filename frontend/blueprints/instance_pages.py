@@ -135,7 +135,7 @@ LIMIT {}, {}"""
             count = 1
             for item in row:
                 if count == 9 or count == 11:
-                    item = (f'<a href="/ip_details/{str(item)}">{str(item)}</a>')
+                    item = (f'/ip_details/{item};{item}')
                 else:
                     item = str(item)
                 new_row = new_row + [item]
