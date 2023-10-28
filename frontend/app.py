@@ -32,6 +32,8 @@ bootstrap = Bootstrap(app)
 #SET STORAGE DIRECTORY
 dir = "/var/models"
 
+database = db_handler.DB()
+
 #----------------------------------------------------
 #WEB APP PAGES
 #----------------------------------------------------
@@ -54,12 +56,12 @@ def map():
         start_coords = (51.75, -1.25)
         folium_map = folium.Map(location=start_coords, zoom_start=6)
         instance_details_query = """SELECT id, pfsense_name, latitude, longtitude FROM pfsense_instances"""
-        results = db_handler.query_db(instance_details_query)
+        results = database.query_db(instance_details_query)
         instance_last_log = """SELECT record_time FROM pfsense_logs WHERE pfsense_instance = {} ORDER BY record_time DESC LIMIT 1"""
         for instance in results:
             logging.warning(str(instance))
             try:
-                last_record_time = db_handler.query_db(instance_last_log.format(str(instance[0])))[0][0]
+                last_record_time = database.query_db(instance_last_log.format(str(instance[0])))[0][0]
                 now = datetime.now()
                 time_delta = (now - last_record_time)
                 total_seconds = time_delta.total_seconds()
@@ -81,12 +83,12 @@ def map():
                     ipsec_query_1 = """SELECT remote_connection FROM pfsense_ipsec_connections WHERE pfsense_instance = {}"""
                     ipsec_query_2 = """SELECT pfsense_instance FROM pfsense_instance_interfaces WHERE ipv4_address = '{}'"""
                     ipsec_query_3 = """SELECT latitude, longtitude FROM pfsense_instances WHERE id = {}"""
-                    results = db_handler.query_db(ipsec_query_1.format(str(instance[0])))
+                    results = database.query_db(ipsec_query_1.format(str(instance[0])))
                     for items in results:
                         for item in items:
                             try:
-                                remote_instance = db_handler.query_db(ipsec_query_2.format(str(item)))[0][0]
-                                remote_lat, remote_long = db_handler.query_db(ipsec_query_3.format(str(remote_instance)))[0]
+                                remote_instance = database.query_db(ipsec_query_2.format(str(item)))[0][0]
+                                remote_lat, remote_long = database.query_db(ipsec_query_3.format(str(remote_instance)))[0]
                                 points = [[float(instance[2]), float(instance[3])], [float(remote_lat), float(remote_long)]]
                                 folium.PolyLine(points, weight=2, color="black", opacity=0.3).add_to(folium_map)
                             except:
@@ -109,7 +111,7 @@ def map():
 def dashboard_user_delete(id):
     if(web_handler.basic_page_verify(session["id"]) == True):
         query = """DELETE FROM dashboard_user WHERE id = {}"""
-        db_handler.update_db(query.format(str(id)))
+        database.update_db(query.format(str(id)))
         return(redirect("/dashboard_user_management"))
     else:
         web_handler.user_auth_error_page()

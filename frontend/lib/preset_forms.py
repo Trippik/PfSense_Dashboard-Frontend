@@ -4,6 +4,8 @@ from wtforms.validators import DataRequired, Optional
 
 from frontend.lib import db_handler
 
+database = db_handler.DB()
+
 #Form for login page
 class LoginForm(FlaskForm):
     username = StringField("Username", validators=[DataRequired()])
@@ -52,7 +54,7 @@ class OpenVPNReportConfig(FlaskForm):
 class LogsReportConfig(FlaskForm):
     reciever_name = StringField("Name", validators=[DataRequired()])
     reciever_address = StringField("Email", validators=[DataRequired()])
-    instance = SelectField("PfSense Instance", choices=db_handler.return_client_options(), validators=[DataRequired()])
+    instance = SelectField("PfSense Instance", choices=database.return_client_options(), validators=[DataRequired()])
     submit = SubmitField("Add Reciever", validators=[Optional()])
 
 #Form for adding new dashboard users
@@ -70,5 +72,5 @@ class WhitelistForm(FlaskForm):
 #Form for OpenVPN acitivity search page
 class OVPNActivityForm(FlaskForm):
     user_name = StringField("OpenVPN Username", validators=[Optional()])
-    instance = SelectField("PfSense Instance", choices=db_handler.return_client_options(), validators=[DataRequired()])
+    instance = SelectField("PfSense Instance", choices=database.return_client_options(), validators=[DataRequired()])
     submit = SubmitField("Search", validators=[Optional()])

@@ -5,6 +5,8 @@ from frontend.lib import db_handler, web_handler, preset_forms
 
 ovpn_pages_blueprint = Blueprint('ovpn_pages_blueprint', __name__)
 
+database = db_handler.DB()
+
 #ALL INSTANCE OPENVPN PAGE
 @ovpn_pages_blueprint.route("/all_openvpn", methods=["GET", "POST"])
 def all_openvpn():
@@ -14,7 +16,7 @@ LEFT JOIN vpn_user ON open_vpn_access_log.vpn_user = vpn_user.id
 LEFT JOIN pfsense_instances ON open_vpn_access_log.pfsense_instance = pfsense_instances.id
 ORDER BY record_time DESC 
 LIMIT 50"""
-        results = db_handler.query_db(query)
+        results = database.query_db(query)
         filtered_results = []
         for row in results:
             new_row = []
@@ -52,7 +54,7 @@ def instance_openvpn(id, offset):
                     pass
         query = """SELECT record_time, vpn_user.user_name, vpn_user.id FROM open_vpn_access_log LEFT JOIN vpn_user ON open_vpn_access_log.vpn_user = vpn_user.id WHERE open_vpn_access_log.pfsense_instance = {} ORDER BY record_time DESC LIMIT {}, {}"""
         logging.warning(query.format(id, offset, "50"))
-        results = db_handler.query_db(query.format(id, offset, "50"))
+        results = database.query_db(query.format(id, offset, "50"))
         filtered_results = []
         for row in results:
             new_row = []
@@ -77,7 +79,7 @@ def ovpn_report_config():
         form = preset_forms.OpenVPNReportConfig()
         query = """SELECT id, reciever_name, reciever_address FROM open_vpn_report_recievers"""
         insert_reciever = """INSERT INTO open_vpn_report_recievers (reciever_name, reciever_address) VALUES ("{}", "{}")"""
-        raw_results = db_handler.query_db(query)
+        raw_results = database.query_db(query)
         final_results = []
         for row in raw_results:
             new_row = [row[1], row[2], "/open_vpn_report_reciever_delete/" + str(row[0]) + ";Remove Reciever Entry"]
@@ -86,7 +88,7 @@ def ovpn_report_config():
         if form.validate_on_submit():
             user_name = form.reciever_name.data
             user_address = form.reciever_address.data
-            db_handler.update_db(insert_reciever.format(user_name, user_address))
+            database.update_db(insert_reciever.format(user_name, user_address))
             return(redirect("/ovpn_report_config"))
         return render_template("table_form.html", heading="OpenVPN Report Configuration", headings=headings, collection=final_results, form=form)
     else:
@@ -97,7 +99,7 @@ def ovpn_report_config():
 def ovpn_report_reciever_delete(id):
     if(web_handler.basic_page_verify(session["id"]) == True):
         query = """DELETE FROM open_vpn_report_recievers WHERE id = {}"""
-        db_handler.update_db(query.format(id))
+        database.update_db(query.format(id))
         return(redirect("/ovpn_report_config"))
     else:
         web_handler.user_auth_error_page()

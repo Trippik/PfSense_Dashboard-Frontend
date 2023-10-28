@@ -5,6 +5,8 @@ from frontend.lib import db_handler, web_handler, preset_forms, location_handler
 
 instance_pages_blueprint = Blueprint('instance_pages_blueprint', __name__)
 
+database = db_handler.DB()
+
 #PER INSTANCE SYSTEM USERS PAGE
 @instance_pages_blueprint.route("/instance_users/<id>-<offset>", methods=["GET", "POST"])
 def instance_users(id, offset):
@@ -27,7 +29,7 @@ def instance_users(id, offset):
                     pass
         query = """SELECT user_name, user_group, user_description FROM pfsense_instance_users WHERE pfsense_instance = {} ORDER BY user_name ASC LIMIT {}, {} """
         logging.warning(query.format(id, offset, "50"))
-        results = db_handler.query_db(query.format(id, offset, "50"))
+        results = database.query_db(query.format(id, offset, "50"))
         filtered_results = []
         for row in results:
             new_row = []
@@ -52,7 +54,7 @@ def instance_whitelist(id):
         form = preset_forms.WhitelistForm()
         message = "You can specify exact origin IP addresses and ports that you want put on a whitelist for this instance below."
         query = """SELECT whitelist.id, pfsense_ip.ip, destination_port FROM whitelist LEFT JOIN pfsense_ip ON whitelist.ip = pfsense_ip.id WHERE pfsense_instance = {}"""
-        whitelist_results = db_handler.query_db(query.format(str(id)))
+        whitelist_results = database.query_db(query.format(str(id)))
         results = []
         logging.warning(str(whitelist_results))
         if(len(whitelist_results) == 0):
@@ -63,9 +65,9 @@ def instance_whitelist(id):
         headings_tup = ["IP Address", "Port"]
         if form.validate_on_submit():
             insert_query = """INSERT INTO whitelist (ip, destination_port, pfsense_instance) VALUES ({}, {}, {})"""
-            ip_id = db_handler.find_ip(form.ip.data)
+            ip_id = database.find_ip(form.ip.data)
             port = form.port.data
-            db_handler.update_db(insert_query.format(str(ip_id), str(port), str(id)))
+            database.update_db(insert_query.format(str(ip_id), str(port), str(id)))
             return redirect("/instance_whitelist/" + str(id))
         return render_template("whitelist_page.html", heading="Instance Whitelist", message=message, form=form, table_headings=headings_tup, data_collection=results)
     else:
@@ -76,7 +78,7 @@ def instance_whitelist(id):
 def whitelist_delete(id, pf_id):
     if(web_handler.basic_page_verify(session["id"]) == True):
         query = """DELETE FROM whitelist WHERE id = {}"""
-        db_handler.update_db(query.format(id))
+        database.update_db(query.format(id))
         return redirect("/instance_whitelist/" + pf_id)
     else:
         web_handler.user_auth_error_page()
@@ -128,7 +130,7 @@ LEFT JOIN pfsense_ip AS pfsense_destination_ip ON pfsense_logs.destination_ip = 
 WHERE pfsense_logs.pfsense_instance = {}
 ORDER BY pfsense_logs.record_time DESC
 LIMIT {}, {}"""
-        results = db_handler.query_db(query.format(id, offset, "50"))
+        results = database.query_db(query.format(id, offset, "50"))
         final_results = []
         for row in results:
             new_row = []
@@ -181,7 +183,7 @@ FROM pfsense_ipsec_connections
 LEFT JOIN pfsense_instance_interfaces ON pfsense_ipsec_connections.remote_connection = pfsense_instance_interfaces.ipv4_address 
 LEFT JOIN pfsense_instances ON pfsense_instance_interfaces.pfsense_instance = pfsense_instances.id
 WHERE pfsense_ipsec_connections.pfsense_instance = {}"""
-        instance_results = db_handler.query_db(instance_details_query.format(str(id)))[0]
+        instance_results = database.query_db(instance_details_query.format(str(id)))[0]
         pre_amble_tup = ["Name", "Hostname", "Reachable IP", "Instance User", "Instance Password", "SSH Port", "FreeBSD Version", "PfSense Release"]
         final_tup = []
         max_count = len(pre_amble_tup)
@@ -192,9 +194,9 @@ WHERE pfsense_ipsec_connections.pfsense_instance = {}"""
             item = [[pre_amble_tup[element_count], result_element]]
             final_tup = final_tup + item
             element_count = element_count + 1
-        instance_int = db_handler.query_db(interfaces_query.format(str(id)))
+        instance_int = database.query_db(interfaces_query.format(str(id)))
         headings_int = ["Interface Name", "Interface", "MAC Address", "IPv6", "IPv4", "Interface Type"]
-        ipsec_results = db_handler.query_db(ipsec_query.format(str(id)))
+        ipsec_results = database.query_db(ipsec_query.format(str(id)))
         results_ipsec = []
         for row in ipsec_results:
             new_row = []
@@ -223,11 +225,11 @@ WHERE pfsense_ipsec_connections.pfsense_instance = {}"""
                         element = '"' + item[1] + '"'
                         long, lat = location_handler.long_lat_calc(item[1])
                         query = """UPDATE pfsense_instances SET longtitude = {}, latitude = {} WHERE id = {}"""
-                        db_handler.update_db(query.format(str(long), str(lat), str(id)))
+                        database.update_db(query.format(str(long), str(lat), str(id)))
                     clause = clause + item[0] + " = " + element + ", "
             clause = clause[:-2]
             update_query = """UPDATE pfsense_instances SET {} WHERE id = {}"""
-            db_handler.update_db(update_query.format(clause, str(id)))
+            database.update_db(update_query.format(clause, str(id)))
             return (redirect('/instance_details/' + str(id)))
         return render_template("instance_details.html", heading="Instance Details", headings_int=headings_int, collection_int=instance_int, headings_ipsec=ipsec_headings, collection_ipsec=results_ipsec, messages=final_tup, buttons=buttons_tup, form=form)
     else:
@@ -243,7 +245,7 @@ rule_description
 FROM pfsense_firewall_rules
 WHERE pfsense_instance = {}
 ORDER BY rule_number ASC"""
-        results = db_handler.query_db(query.format(str(id)))
+        results = database.query_db(query.format(str(id)))
         final_results = []
         for row in results:
             new_row = []
@@ -269,7 +271,7 @@ pfsense_instances.pfsense_name
 FROM combined_reports_recievers 
 LEFT JOIN pfsense_instances ON combined_reports_recievers.instance_id = pfsense_instances.id"""
         insert_reciever = """INSERT INTO combined_reports_recievers (`instance_id`, `reciever_name`, `receiver_address`) VALUES ({}, "{}", "{}");"""
-        raw_results = db_handler.query_db(query)
+        raw_results = database.query_db(query)
         final_results = []
         for row in raw_results:
             data_tup = []
@@ -286,7 +288,7 @@ LEFT JOIN pfsense_instances ON combined_reports_recievers.instance_id = pfsense_
             instance = form.instance.data
             reciever_name = form.reciever_name.data
             reciever_address = form.reciever_address.data
-            db_handler.update_db(insert_reciever.format(instance, reciever_name, reciever_address))
+            database.update_db(insert_reciever.format(instance, reciever_name, reciever_address))
             return(redirect("/instance_log_report_config"))
         return render_template("table_form.html", heading="Combined Log Errors Report Configuration", headings=headings, collection=final_results, form=form)
     else:
@@ -297,7 +299,7 @@ LEFT JOIN pfsense_instances ON combined_reports_recievers.instance_id = pfsense_
 def instance_log_report_reciever_delete(id):
     if(web_handler.basic_page_verify(session["id"]) == True):
         query = """DELETE FROM combined_reports_recievers WHERE id = {}"""
-        db_handler.update_db(query.format(id))
+        database.update_db(query.format(id))
         return(redirect("/instance_log_report_config"))
     else:
         web_handler.user_auth_error_page()
@@ -309,7 +311,7 @@ def add_instance():
         form = preset_forms.NewInstanceForm()
         if form.validate_on_submit():
             insert_query = """INSERT INTO `Dashboard_DB`.`pfsense_instances` (`pfsense_name`, `hostname`, `reachable_ip`, `instance_user`, `instance_password`, `ssh_port`) VALUES ("{}", "{}", "{}", "{}", "{}", {});"""
-            db_handler.update_db(insert_query.format(form.instance_name.data, form.hostname.data, form.reachable_ip.data, form.instance_user.data, form.instance_password.data, str(form.ssh_port.data)))
+            database.update_db(insert_query.format(form.instance_name.data, form.hostname.data, form.reachable_ip.data, form.instance_user.data, form.instance_password.data, str(form.ssh_port.data)))
             select_query = """SELECT id FROM pfsense_instances WHERE
 pfsense_name = "{}" 
 AND hostname = "{}" 
@@ -317,7 +319,7 @@ AND reachable_ip = "{}"
 AND instance_user = "{}" 
 AND instance_password = "{}" 
 AND ssh_port = {}"""
-            id = db_handler.query_db(select_query.format(form.instance_name.data, form.hostname.data, form.reachable_ip.data, form.instance_user.data, form.instance_password.data, str(form.ssh_port.data)))[0][0]
+            id = database.query_db(select_query.format(form.instance_name.data, form.hostname.data, form.reachable_ip.data, form.instance_user.data, form.instance_password.data, str(form.ssh_port.data)))[0][0]
             return (redirect('/instance_details/' + str(id)))
         return render_template("index_form.html", heading="Add New Instance", form=form)
     else:
@@ -337,7 +339,7 @@ def delete_instance(id):
 "DELETE FROM pfsense_instances WHERE id = {}",
 "DELETE FROM pfsense_logs WHERE pfsense_instance = {}"]
         for query in deletion_queries:
-            db_handler.update_db(query.format(str(id)))
+            database.update_db(query.format(str(id)))
         return(redirect("/home"))
     else:
         web_handler.user_auth_error_page()

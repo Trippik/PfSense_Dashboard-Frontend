@@ -6,6 +6,8 @@ from frontend.lib import db_handler, web_handler, preset_forms, password_handler
 
 system_pages_blueprint = Blueprint('system_pages_blueprint', __name__)
 
+database = db_handler.DB()
+
 #LOGIN PAGE
 @system_pages_blueprint.route('/', methods=["GET","POST"])
 def login():
@@ -16,13 +18,13 @@ def login():
         key = password_handler.password_hash_generate(password, os.environ["SALT"])
         query = 'SELECT COUNT(*) FROM dashboard_user WHERE user_name = "{}" AND pass = "{}"'
         query = query.format(username, key)
-        results = db_handler.query_db(query)
+        results = database.query_db(query)
         for row in results:
             user_success = int(row[0])
         if(user_success == 1):
             query = 'SELECT id FROM dashboard_user WHERE user_name = "{}" AND pass = "{}"'
             query = query.format(username, key)
-            results = db_handler.query_db(query)
+            results = database.query_db(query)
             for row in results:
                 session["id"] = int(row[0])
             return redirect("/home")
@@ -38,7 +40,7 @@ def home():
         instances_query = """SELECT id, pfsense_name, hostname, reachable_ip FROM pfsense_instances ORDER BY pfsense_name DESC"""
         last_log_query = """SELECT record_time FROM pfsense_logs WHERE pfsense_instance = {} ORDER BY record_time DESC LIMIT 1"""
         errors_query = """SELECT daily_error, weekly_error, joint_error FROM error_rates WHERE pfsense_instance = {}"""
-        instances_raw = db_handler.query_db(instances_query)
+        instances_raw = database.query_db(instances_query)
         instances = []
         headings = ["Pfsense Name", "Hostname", "Reachable IP", "Last Log Entry", "Days Errors", "Weeks Errors", "Joint Errors"]
         if(len(instances_raw) == 0):
@@ -47,9 +49,9 @@ def home():
         else:
             for instance in instances_raw:
                 try:
-                    last_time = db_handler.query_db(last_log_query.format(instance[0]))[0][0]
+                    last_time = database.query_db(last_log_query.format(instance[0]))[0][0]
                     last_time = last_time.strftime('%Y-%m-%d %H:%M:%S')
-                    daily_error_percent, weekly_error_percent, joint_error_percent = db_handler.query_db(errors_query.format(str(instance[0])))[0]
+                    daily_error_percent, weekly_error_percent, joint_error_percent = database.query_db(errors_query.format(str(instance[0])))[0]
                 except:
                     last_time = "No logs"
                     daily_error_percent = "NA"
@@ -79,7 +81,7 @@ def dashboard_user_management():
     if(web_handler.basic_page_verify(session["id"]) == True):
         form = preset_forms.DashboardUsers()
         select_query = """SELECT id, user_name FROM dashboard_user"""
-        raw_results = db_handler.query_db(select_query)
+        raw_results = database.query_db(select_query)
         users_lines = []
         for row in raw_results:
             new_line = [row[1], "/dashboard_user_delete/" + str(row[0]) + ";Delete User"]
@@ -91,7 +93,7 @@ def dashboard_user_management():
             prov_pass = form.password.data
             salt = os.environ["SALT"]
             salted_pass = password_handler.password_hash_generate(prov_pass, salt)
-            db_handler.update_db(insert_query.format(user_name, salted_pass))
+            database.update_db(insert_query.format(user_name, salted_pass))
             return(redirect("/dashboard_user_management"))
         return render_template("table_form.html", heading="Dashboard User Management", headings=table_headings, collection=users_lines, form=form)
     else:
@@ -102,7 +104,7 @@ def dashboard_user_management():
 def dashboard_user_delete(id):
     if(web_handler.basic_page_verify(session["id"]) == True):
         query = """DELETE FROM dashboard_user WHERE id = {}"""
-        db_handler.update_db(query.format(str(id)))
+        database.update_db(query.format(str(id)))
         return(redirect("/dashboard_user_management"))
     else:
         web_handler.user_auth_error_page()
