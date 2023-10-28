@@ -82,7 +82,7 @@
 {% endmacro %}
 
 
-{% macro make_table_button(table_headings, data_collection) %}
+{% macro make_table_button_or_hyperlink(table_headings, data_collection) %}
     <table style="margin-left: auto; margin-right: auto; border: 1px solid black">
         <tr>
             {% for table_heading in table_headings %}
@@ -93,8 +93,13 @@
             <tr>
             {% for data in data_set %}
                 {% if data.startswith("/") %}
-                    {% set list1 = data.split(';') %}
-                    <td style="padding: 15px; border: 1px solid black"><a href="{{list1[0]}}" class="btn btn-primary">{{list1[1]}}</a></td>
+                    {% if ";" in data %}
+                        {% set list1 = data.split(';') %}
+                        <td style="padding: 15px; border: 1px solid black"><a href="{{list1[0]}}" class="btn btn-primary">{{list1[1]}}</a></td>
+                    {% elif "^" in data %}
+                        {% set list1 = data.split('^') %}
+                        <td style="padding: 15px; border: 1px solid black"><a href="{{list1[0]}}">{{list1[1]}}</a></td>
+                    {% endif %}
                 {% else %}
                     <td style="padding: 15px; border: 1px solid black">{{data}}</td>
                 {% endif %}

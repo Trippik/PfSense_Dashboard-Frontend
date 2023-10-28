@@ -1,4 +1,4 @@
-FROM ubuntu:23.04
+FROM python:latest
 
 MAINTAINER Cameron Trippick "trippickc@gmail.com"
 
@@ -14,7 +14,7 @@ COPY . /
 
 WORKDIR /
 
-RUN pip3 install -r requirements.txt
+RUN pip install -r requirements.txt
 
 RUN python3 setup.py install
 
