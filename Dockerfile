@@ -1,10 +1,8 @@
-FROM python:latest
-
-MAINTAINER Cameron Trippick "trippickc@gmail.com"
+FROM ubuntu:latest
 
 RUN apt-get update -y && \
-    apt-get install -y python3-pip python3-dev
-
+    apt-get install -y python3-dev && \
+    apt-get install -y python3-pip
 
 COPY ./requirements.txt /requirements.txt
 
@@ -14,8 +12,8 @@ COPY . /
 
 WORKDIR /
 
-RUN pip install -r requirements.txt
+RUN pip3 install -r requirements.txt
 
-RUN python setup.py install
+RUN python3 setup.py install
 
 CMD [ "PfSense_Dashboard-Frontend" ]

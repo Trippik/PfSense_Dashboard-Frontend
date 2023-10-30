@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="PfSense_Dashboard-Frontend",
-    version="1.0.x",
+    version="1.1.2",
     author="Cameron Trippick",
     packages=['frontend', 'frontend.lib', 'frontend.blueprints', 'password_hasher'],
     include_package_data=True,
