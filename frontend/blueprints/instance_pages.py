@@ -137,7 +137,9 @@ LIMIT {}, {}"""
             count = 1
             for item in row:
                 if count == 9 or count == 11:
-                    item = (f'/ip_details/{item}^{item}')
+                    item = f'/ip_details/{item}^{item}'
+                elif count == 10 or count == 12:
+                    item = f'https://www.speedguide.net/port.php?port={item}^{item}'
                 else:
                     item = str(item)
                 new_row = new_row + [item]
