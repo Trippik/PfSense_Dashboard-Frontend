@@ -1,8 +1,10 @@
-FROM ubuntu:latest
+FROM alpine:latest
 
-RUN apt-get update -y && \
-    apt-get install -y python3-dev && \
-    apt-get install -y python3-pip
+RUN apk update
+
+RUN apk add python3
+
+RUN apk add py-pip
 
 COPY ./requirements.txt /requirements.txt
 
